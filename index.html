@@ -11,31 +11,137 @@
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
     body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; color: #1e293b; }
     .navbar-brand { font-weight: 700; letter-spacing: 0.5px; }
-    .profile-img { width: 136px; height: 136px; object-fit: cover; border-radius: 50%; border: 3px solid #0d6efd; background: #fff; }
+    .profile-img { width: 132px; height: 132px; object-fit: cover; border-radius: 50%; border: 3px solid #0d6efd; background: #fff; }
     .nav-pills .nav-link.active { background-color: #0d6efd; font-weight: 600; }
     .card { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05); }
 
-    .section-card { border-radius: 12px; padding: 1.15rem; }
-    .section-profile { background-color: #eff6ff; border: 1px solid #bfdbfe; }
-    .section-exp     { background-color: #f0fdf4; border: 1px solid #bbf7d0; }
-    .section-edu     { background-color: #f5f3ff; border: 1px solid #ddd6fe; }
+    /* พื้นหลังการ์ดสีขาว + แถบเน้นด้านล่าง/ซ้ายและสีไอคอน */
+    .clean-section-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 6px rgba(15, 23, 42, 0.04);
+    }
+    .accent-bar-blue   { height: 4px; border-radius: 999px; background-color: #2563eb; margin-top: 0.85rem; }
+    .accent-bar-green  { height: 4px; border-radius: 999px; background-color: #16a34a; margin-top: 0.85rem; }
+    .accent-bar-purple { height: 4px; border-radius: 999px; background-color: #7c3aed; margin-top: 0.85rem; }
 
-    .add-group-box { border-radius: 12px; padding: 1rem 1.15rem; }
-    .add-group-course { background-color: #f0f9ff; border: 1px solid #bae6fd; border-left: 4px solid #0284c7; }
-    .add-group-date   { background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; }
-    .add-group-file   { background-color: #faf5ff; border: 1px solid #e9d5ff; border-left: 4px solid #7c3aed; }
+    .section-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+    }
 
-    .add-group-title { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.45rem; }
     .form-label { font-size: 0.875rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; }
 
-    .exp-item-card { background: #ffffff; border: 1px solid #86efac; border-left: 4px solid #16a34a; border-radius: 10px; padding: 0.75rem 0.9rem; }
-    .exp-item-card .form-control { min-width: 0; font-size: 0.875rem; }
+    /* Experience Timeline */
+    .timeline-wrapper {
+      position: relative;
+      padding-left: 1.75rem;
+    }
+    .timeline-wrapper::before {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 10px;
+      bottom: 10px;
+      width: 2px;
+      background-color: #cbd5e1;
+    }
+    .timeline-item {
+      position: relative;
+      padding-bottom: 1.25rem;
+    }
+    .timeline-item:last-child {
+      padding-bottom: 0;
+    }
+    .timeline-dot {
+      position: absolute;
+      left: -1.75rem;
+      top: 6px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 3px solid #ffffff;
+      box-shadow: 0 0 0 1px #cbd5e1;
+    }
+    .timeline-dot.current {
+      background-color: #16a34a;
+      box-shadow: 0 0 0 2px #bbf7d0;
+    }
+    .timeline-dot.past {
+      background-color: #94a3b8;
+    }
 
-    .edu-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
-    .edu-card.bach { border-top: 4px solid #0d6efd; }
-    .edu-card.mast { border-top: 4px solid #0284c7; }
-    .edu-card.doc  { border-top: 4px solid #4f46e5; }
+    /* Education List Cards */
+    .edu-entry-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1rem 1.15rem;
+      transition: border-color 0.15s ease;
+    }
+    .edu-entry-card:hover {
+      border-color: #cbd5e1;
+    }
+    .edu-level-badge {
+      background-color: #eff6ff;
+      color: #2563eb;
+      font-weight: 600;
+      font-size: 0.8rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 8px;
+    }
+    .doc-available-tag {
+      color: #16a34a;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+    .doc-available-tag:hover {
+      text-decoration: underline;
+    }
 
+    /* Training Form Progressive Disclosure */
+    .form-field-box {
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 0.55rem 0.85rem;
+    }
+    .form-field-box:focus-within {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+    .form-field-box .form-label {
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-bottom: 0.15rem;
+    }
+    .form-field-box .form-control,
+    .form-field-box .form-select {
+      border: none;
+      padding: 0.15rem 0;
+      font-weight: 600;
+      color: #0f172a;
+      background-color: transparent !important;
+      box-shadow: none !important;
+    }
+    .extra-sub-panel {
+      background-color: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 0.95rem 1rem;
+    }
+
+    /* Monitor & Dashboard */
     .clock-pill {
       display: inline-flex;
       align-items: center;
@@ -48,7 +154,6 @@
       font-weight: 700;
       font-size: 0.92rem;
     }
-
     .filter-panel {
       background: #ffffff;
       border-radius: 14px;
@@ -56,7 +161,6 @@
       box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
       border: 1px solid #e2e8f0;
     }
-
     .dash-stat-card {
       border-radius: 12px;
       padding: 0.85rem 0.5rem;
@@ -70,7 +174,6 @@
     .dash-stat-card.active-card { outline: 3px solid #1e293b; outline-offset: 2px; }
     .dash-stat-label { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.15rem; }
     .dash-stat-val   { font-size: 1.65rem; font-weight: 700; line-height: 1.15; }
-
     .card-all      { background-color: #0d6efd; }
     .card-expire   { background-color: #dc3545; }
     .card-warning  { background-color: #fd7e14; }
@@ -146,7 +249,7 @@
           </button>
         </li>
 
-        <!-- ADMIN TABS (3 เมนู: Monitor, Dashboard, Approved) -->
+        <!-- ADMIN TABS -->
         <li class="nav-item admin-only hidden">
           <button type="button" id="tabBtnAdminMonitor" class="nav-link" data-bs-toggle="pill" data-bs-target="#tabAdminMonitor" onclick="loadMonitor()">
             <i class="fa-solid fa-desktop me-1"></i> Monitor
@@ -169,14 +272,9 @@
         <div class="tab-pane fade show active user-only" id="tabProfile">
           <div class="card p-4">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 pb-3 border-bottom">
-              <div class="d-flex align-items-center gap-2">
-                <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white" style="width:38px;height:38px;">
-                  <i class="fa-solid fa-user-tie"></i>
-                </span>
-                <div>
-                  <h5 class="fw-bold text-primary mb-0">ข้อมูลประวัติส่วนตัว (Background)</h5>
-                  <small class="text-muted">จัดการข้อมูลส่วนตัว ประสบการณ์ทำงาน และวุฒิการศึกษา</small>
-                </div>
+              <div>
+                <h5 class="fw-bold text-primary mb-0">ข้อมูลประวัติส่วนตัว (Background)</h5>
+                <small class="text-muted">จัดการข้อมูลส่วนตัว ประสบการณ์ทำงาน และวุฒิการศึกษา</small>
               </div>
               <div class="d-flex flex-wrap gap-2">
                 <button type="button" class="btn btn-outline-danger btn-sm" onclick="exportPDF()">
@@ -190,145 +288,122 @@
 
             <input type="hidden" id="bgRow">
 
-            <!-- 1. ส่วนข้อมูลประวัติส่วนตัว -->
-            <div class="section-card section-profile mb-4">
-              <div class="d-flex align-items-center gap-2 mb-3">
-                <span class="badge bg-primary text-white px-2 py-1">
-                  <i class="fa-solid fa-id-card me-1"></i> Profile
-                </span>
-                <h6 class="fw-bold text-primary mb-0">ข้อมูลประวัติส่วนตัว (Background)</h6>
-              </div>
-
-              <div class="row g-4 align-items-center">
-                <div class="col-lg-3 text-center">
-                  <img id="bgPicPreview" src="https://via.placeholder.com/150?text=No+Image" class="profile-img mb-2 shadow-sm">
-                  <div>
-                    <label class="btn btn-sm btn-outline-primary bg-white rounded-pill px-3">
-                      <i class="fa-solid fa-camera me-1"></i> เปลี่ยนรูปภาพ
-                      <input type="file" id="bgPicInput" accept="image/*" class="hidden" onchange="handleBgPicUpload(this)">
-                    </label>
-                    <input type="hidden" id="bgPicUrl">
+            <div class="row g-4">
+              <!-- คอลัมน์ซ้าย: Profile (ข้อมูลพื้นฐาน) & Education (ประวัติการศึกษา) -->
+              <div class="col-lg-6 d-flex flex-column gap-4">
+                <!-- 1. Profile -->
+                <div class="clean-section-card">
+                  <div class="d-flex align-items-center gap-3">
+                    <span class="section-icon-box bg-primary">
+                      <i class="fa-solid fa-address-book"></i>
+                    </span>
+                    <div>
+                      <h6 class="fw-bold text-dark mb-0">Profile</h6>
+                      <small class="text-muted">ข้อมูลพื้นฐาน</small>
+                    </div>
                   </div>
-                </div>
+                  <div class="accent-bar-blue mb-3"></div>
 
-                <div class="col-lg-9">
+                  <div class="text-center mb-3">
+                    <img id="bgPicPreview" src="https://via.placeholder.com/150?text=No+Image" class="profile-img mb-2 shadow-sm">
+                    <div>
+                      <label class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                        <i class="fa-solid fa-camera me-1"></i> เปลี่ยนรูปภาพ
+                        <input type="file" id="bgPicInput" accept="image/*" class="hidden" onchange="handleBgPicUpload(this)">
+                      </label>
+                      <input type="hidden" id="bgPicUrl">
+                    </div>
+                  </div>
+
                   <div class="row g-3">
-                    <div class="col-md-6">
-                      <label class="form-label text-dark"><i class="fa-solid fa-signature me-1 text-primary"></i>Name (EN)</label>
-                      <input type="text" id="bgNameEN" class="form-control bg-white">
+                    <div class="col-sm-6">
+                      <label class="form-label">Name (EN)</label>
+                      <input type="text" id="bgNameEN" class="form-control">
                     </div>
-                    <div class="col-md-6">
-                      <label class="form-label text-dark"><i class="fa-solid fa-user me-1 text-primary"></i>ชื่อ-นามสกุล (TH)</label>
-                      <input type="text" id="bgNameTH" class="form-control bg-white">
+                    <div class="col-sm-6">
+                      <label class="form-label">ชื่อ-นามสกุล (TH)</label>
+                      <input type="text" id="bgNameTH" class="form-control">
                     </div>
-                    <div class="col-md-4">
-                      <label class="form-label text-dark"><i class="fa-solid fa-tag me-1 text-primary"></i>Initial Name</label>
+                    <div class="col-sm-4">
+                      <label class="form-label">Initial Name</label>
                       <input type="text" id="bgInitial" class="form-control bg-light" readonly>
                     </div>
-                    <div class="col-md-4">
-                      <label class="form-label text-dark"><i class="fa-solid fa-briefcase me-1 text-primary"></i>Position</label>
-                      <select id="bgPosition" class="form-select bg-white"></select>
+                    <div class="col-sm-4">
+                      <label class="form-label">Position</label>
+                      <select id="bgPosition" class="form-select"></select>
                     </div>
-                    <div class="col-md-4">
-                      <label class="form-label text-dark"><i class="fa-solid fa-calendar-day me-1 text-primary"></i>Start Date</label>
-                      <input type="text" id="bgDateStart" class="form-control bg-white" placeholder="dd/mm/yyyy">
+                    <div class="col-sm-4">
+                      <label class="form-label">Start Date</label>
+                      <input type="text" id="bgDateStart" class="form-control" placeholder="dd/mm/yyyy">
                     </div>
-                    <div class="col-md-6">
-                      <label class="form-label text-dark"><i class="fa-solid fa-address-card me-1 text-primary"></i>ID Card</label>
-                      <input type="text" id="bgIdCard" class="form-control bg-white">
+                    <div class="col-12">
+                      <label class="form-label">ID Card</label>
+                      <input type="text" id="bgIdCard" class="form-control">
                     </div>
                   </div>
+                </div>
+
+                <!-- 3. Education (แสดงเฉพาะวุฒิที่มีข้อมูล + ปุ่มเพิ่มวุฒิการศึกษา) -->
+                <div class="clean-section-card">
+                  <div class="d-flex justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                      <span class="section-icon-box" style="background-color:#7c3aed;">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                      </span>
+                      <div>
+                        <h6 class="fw-bold text-dark mb-0">Education</h6>
+                        <small class="text-muted">ประวัติการศึกษา</small>
+                      </div>
+                    </div>
+                    <span class="badge rounded-pill bg-light text-dark border px-3 py-2" id="eduCountBadge">0 รายการ</span>
+                  </div>
+                  <div class="accent-bar-purple mb-3"></div>
+
+                  <div id="eduListContainer" class="d-flex flex-column gap-3 mb-3"></div>
+
+                  <button type="button" class="btn btn-outline-secondary w-100 py-2 rounded-3 fw-semibold" onclick="openEduModal()">
+                    <i class="fa-solid fa-plus me-1"></i> เพิ่มวุฒิการศึกษา
+                  </button>
+
+                  <!-- ฟิลด์ซ่อนสำหรับเก็บค่าส่งบันทึก -->
+                  <input type="hidden" id="eduBachYear">
+                  <input type="hidden" id="eduBachDeg">
+                  <input type="hidden" id="eduBachUni">
+                  <input type="hidden" id="eduBachFile">
+
+                  <input type="hidden" id="eduMastYear">
+                  <input type="hidden" id="eduMastDeg">
+                  <input type="hidden" id="eduMastUni">
+                  <input type="hidden" id="eduMastFile">
+
+                  <input type="hidden" id="eduDocYear">
+                  <input type="hidden" id="eduDocDeg">
+                  <input type="hidden" id="eduDocUni">
+                  <input type="hidden" id="eduDocFile">
                 </div>
               </div>
-            </div>
 
-            <!-- 2. ส่วนประสบการณ์ทำงาน -->
-            <div class="section-card section-exp mb-4">
-              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="badge bg-success text-white px-2 py-1">
-                    <i class="fa-solid fa-briefcase me-1"></i> Experience
-                  </span>
-                  <h6 class="fw-bold text-success mb-0">ประสบการณ์ทำงาน</h6>
-                </div>
-                <button type="button" id="btnAddExp" class="btn btn-sm btn-outline-success bg-white rounded-pill px-3" onclick="addExperienceSlot()">
-                  <i class="fa-solid fa-plus me-1"></i> เพิ่มประสบการณ์
-                </button>
-              </div>
-              <div id="expContainer" class="row g-2"></div>
-            </div>
-
-            <!-- 3. ส่วนประวัติการศึกษา -->
-            <div class="section-card section-edu">
-              <div class="d-flex align-items-center gap-2 mb-3">
-                <span class="badge text-white px-2 py-1" style="background-color:#6d28d9;">
-                  <i class="fa-solid fa-graduation-cap me-1"></i> Education
-                </span>
-                <h6 class="fw-bold mb-0" style="color:#5b21b6;">ประวัติการศึกษา</h6>
-              </div>
-
-              <div class="row g-3">
-                <div class="col-lg-4">
-                  <div class="edu-card bach">
-                    <div>
-                      <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-                        <strong class="text-primary"><i class="fa-solid fa-user-graduate me-1"></i>ปริญญาตรี (Bachelor)</strong>
-                        <span class="badge bg-primary text-white small">B.Sc. / B.A.</span>
+              <!-- คอลัมน์ขวา: Experience (Timeline) -->
+              <div class="col-lg-6">
+                <div class="clean-section-card h-100">
+                  <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                      <span class="section-icon-box bg-success">
+                        <i class="fa-solid fa-briefcase"></i>
+                      </span>
+                      <div>
+                        <h6 class="fw-bold text-dark mb-0">Experience</h6>
+                        <small class="text-muted d-block">ประสบการณ์ทำงาน</small>
+                        <small class="text-secondary" id="expCountText">0 รายการ</small>
                       </div>
-                      <input type="text" id="eduBachYear" class="form-control form-control-sm mb-2" placeholder="ปีที่จบ">
-                      <input type="text" id="eduBachDeg" class="form-control form-control-sm mb-2" placeholder="วุฒิการศึกษา / สาขา">
-                      <input type="text" id="eduBachUni" class="form-control form-control-sm mb-2" placeholder="สถาบันการศึกษา">
                     </div>
-                    <div class="d-flex justify-content-between align-items-center pt-2 mt-1 border-top">
-                      <a id="eduBachLink" href="#" target="_blank" class="small text-decoration-none hidden"><i class="fa-solid fa-file-lines me-1"></i>ดูไฟล์แนบ</a>
-                      <label class="btn btn-sm btn-outline-secondary py-0 px-2 small ms-auto">
-                        <i class="fa-solid fa-upload me-1"></i>Upload <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'bachelor', 29)">
-                      </label>
-                    </div>
-                    <input type="hidden" id="eduBachFile">
+                    <button type="button" id="btnAddExp" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" onclick="openExpModal(-1)">
+                      <i class="fa-solid fa-plus me-1"></i> เพิ่มใหม่
+                    </button>
                   </div>
-                </div>
+                  <div class="accent-bar-green mb-4"></div>
 
-                <div class="col-lg-4">
-                  <div class="edu-card mast">
-                    <div>
-                      <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-                        <strong style="color:#0284c7;"><i class="fa-solid fa-award me-1"></i>ปริญญาโท (Master)</strong>
-                        <span class="badge text-white small" style="background-color:#0284c7;">M.Sc. / M.A.</span>
-                      </div>
-                      <input type="text" id="eduMastYear" class="form-control form-control-sm mb-2" placeholder="ปีที่จบ">
-                      <input type="text" id="eduMastDeg" class="form-control form-control-sm mb-2" placeholder="วุฒิการศึกษา / สาขา">
-                      <input type="text" id="eduMastUni" class="form-control form-control-sm mb-2" placeholder="สถาบันการศึกษา">
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center pt-2 mt-1 border-top">
-                      <a id="eduMastLink" href="#" target="_blank" class="small text-decoration-none hidden"><i class="fa-solid fa-file-lines me-1"></i>ดูไฟล์แนบ</a>
-                      <label class="btn btn-sm btn-outline-secondary py-0 px-2 small ms-auto">
-                        <i class="fa-solid fa-upload me-1"></i>Upload <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'master', 33)">
-                      </label>
-                    </div>
-                    <input type="hidden" id="eduMastFile">
-                  </div>
-                </div>
-
-                <div class="col-lg-4">
-                  <div class="edu-card doc">
-                    <div>
-                      <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-                        <strong style="color:#4f46e5;"><i class="fa-solid fa-certificate me-1"></i>ปริญญาเอก (Doctorate)</strong>
-                        <span class="badge text-white small" style="background-color:#4f46e5;">Ph.D.</span>
-                      </div>
-                      <input type="text" id="eduDocYear" class="form-control form-control-sm mb-2" placeholder="ปีที่จบ">
-                      <input type="text" id="eduDocDeg" class="form-control form-control-sm mb-2" placeholder="วุฒิการศึกษา / สาขา">
-                      <input type="text" id="eduDocUni" class="form-control form-control-sm mb-2" placeholder="สถาบันการศึกษา">
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center pt-2 mt-1 border-top">
-                      <a id="eduDocLink" href="#" target="_blank" class="small text-decoration-none hidden"><i class="fa-solid fa-file-lines me-1"></i>ดูไฟล์แนบ</a>
-                      <label class="btn btn-sm btn-outline-secondary py-0 px-2 small ms-auto">
-                        <i class="fa-solid fa-upload me-1"></i>Upload <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'doctor', 37)">
-                      </label>
-                    </div>
-                    <input type="hidden" id="eduDocFile">
-                  </div>
+                  <div id="expTimelineContainer" class="timeline-wrapper"></div>
                 </div>
               </div>
             </div>
@@ -386,83 +461,76 @@
           </div>
         </div>
 
-        <!-- TAB 3: ADD TRAINING RECORD -->
+        <!-- TAB 3: ADD TRAINING RECORD (Progressive Disclosure) -->
         <div class="tab-pane fade user-only" id="tabAdd">
-          <div class="card p-4 mx-auto" style="max-width: 780px;">
-            <div class="d-flex align-items-center gap-2 mb-4 pb-3 border-bottom">
-              <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white" style="width:38px;height:38px;">
-                <i class="fa-solid fa-folder-plus"></i>
-              </span>
-              <div>
-                <h5 class="fw-bold text-primary mb-0">บันทึกข้อมูลการฝึกอบรม / ใบอนุญาตใหม่</h5>
-                <small class="text-muted">กรอกรายละเอียดหลักสูตรหรือใบอนุญาต และแนบหลักฐานเพื่อส่งตรวจสอบ</small>
+          <div class="card p-4 mx-auto" style="max-width: 680px;">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-4 pb-2 border-bottom">
+              <div class="d-flex align-items-center gap-2">
+                <span class="section-icon-box bg-primary" style="width:36px;height:36px;font-size:1rem;">
+                  <i class="fa-solid fa-file-circle-plus"></i>
+                </span>
+                <h5 class="fw-bold text-dark mb-0">เพิ่มข้อมูลการฝึกอบรม</h5>
               </div>
+              <span class="badge rounded-pill bg-primary-subtle text-primary px-3 py-2">Training Form</span>
             </div>
 
-            <form id="addRecordForm">
-              <!-- กลุ่มที่ 1: รายละเอียดหลักสูตรและสิทธิ์ -->
-              <div class="add-group-box add-group-course mb-3">
-                <div class="add-group-title text-primary">
-                  <span class="badge bg-primary text-white"><i class="fa-solid fa-graduation-cap"></i></span>
-                  <span>รายละเอียดหลักสูตร / ใบอนุญาต</span>
-                </div>
+            <form id="addRecordForm" class="d-flex flex-column gap-3">
+              <div class="form-field-box">
+                <label class="form-label">หน่วยงานฝึกอบรม (ATO) <span class="text-danger">*</span></label>
+                <select id="addAto" class="form-select" required onchange="onAtoOrTypeChange()"></select>
+              </div>
+
+              <div class="form-field-box">
+                <label class="form-label">ประเภทการฝึกอบรม <span class="text-danger">*</span></label>
+                <select id="addType" class="form-select" required onchange="onAtoOrTypeChange()"></select>
+              </div>
+
+              <div class="form-field-box">
+                <label class="form-label">หลักสูตร / ใบอนุญาต <span class="text-danger">*</span></label>
+                <select id="addSub1" class="form-select" required onchange="onSub1Change()"></select>
+              </div>
+
+              <!-- ปุ่มเปิด/ปิดตัวเลือกเพิ่มเติม (Sub Type 2–3) -->
+              <div>
+                <button type="button" id="btnToggleExtraSubs" class="btn btn-light border w-100 d-flex justify-content-between align-items-center py-2 px-3 rounded-3 fw-semibold text-secondary" onclick="toggleExtraSubsPanel()">
+                  <span><i class="fa-solid fa-sliders me-2 text-primary"></i>ตัวเลือกเพิ่มเติม (Sub Type 2–3)</span>
+                  <i class="fa-solid fa-chevron-down" id="extraSubsChevron"></i>
+                </button>
+              </div>
+
+              <div id="extraSubsPanel" class="extra-sub-panel hidden">
                 <div class="row g-3">
-                  <div class="col-md-6">
-                    <label class="form-label"><i class="fa-solid fa-building-columns me-1 text-primary"></i>ATO <span class="text-danger">*</span></label>
-                    <select id="addAto" class="form-select bg-white" required onchange="onAtoOrTypeChange()"></select>
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label"><i class="fa-solid fa-certificate me-1 text-primary"></i>Training / License Type <span class="text-danger">*</span></label>
-                    <select id="addType" class="form-select bg-white" required onchange="onAtoOrTypeChange()"></select>
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label"><i class="fa-solid fa-book-open me-1 text-primary"></i>Sub Type 1 (Course / License) <span class="text-danger">*</span></label>
-                    <select id="addSub1" class="form-select bg-white" required onchange="onSub1Change()"></select>
-                  </div>
                   <div class="col-md-6" id="sub2SelectContainer">
-                    <label class="form-label"><i class="fa-solid fa-layer-group me-1 text-primary"></i>Sub Type 2</label>
+                    <label class="form-label">Sub Type 2</label>
                     <select id="addSub2Select" class="form-select bg-white"></select>
                   </div>
                   <div class="col-md-6 hidden" id="sub2TextContainer">
-                    <label class="form-label"><i class="fa-solid fa-pen-to-square me-1 text-primary"></i>ระบุชื่อหลักสูตร / รายละเอียดเพิ่มเติม</label>
+                    <label class="form-label">ระบุชื่อหลักสูตร / รายละเอียดเพิ่มเติม</label>
                     <input type="text" id="addSub2Text" class="form-control bg-white" placeholder="พิมพ์ชื่อหลักสูตร...">
                   </div>
                   <div class="col-md-6" id="sub3Container">
-                    <label class="form-label"><i class="fa-solid fa-user-shield me-1 text-primary"></i>Role / Authorization (Sub Type 3)</label>
+                    <label class="form-label">Role / Authorization (Sub Type 3)</label>
                     <select id="addSub3" class="form-select bg-white"></select>
                   </div>
                 </div>
               </div>
 
-              <!-- กลุ่มที่ 2: วันที่มีผลและวันหมดอายุ -->
-              <div class="add-group-box add-group-date mb-3">
-                <div class="add-group-title text-success">
-                  <span class="badge bg-success text-white"><i class="fa-solid fa-calendar-days"></i></span>
-                  <span>ระยะเวลาที่มีผล</span>
-                </div>
-                <div class="row g-3">
-                  <div class="col-md-6">
-                    <label class="form-label"><i class="fa-solid fa-calendar-check me-1 text-success"></i>Active Date <span class="text-danger">*</span></label>
-                    <input type="date" id="addActiveDate" class="form-control bg-white" required>
-                  </div>
-                  <div class="col-md-6" id="expireDateContainer">
-                    <label class="form-label"><i class="fa-solid fa-calendar-xmark me-1 text-danger"></i>Expire Date</label>
-                    <input type="date" id="addExpireDate" class="form-control bg-white">
-                  </div>
-                </div>
+              <div class="form-field-box">
+                <label class="form-label">วันที่เริ่มมีผล (Active Date) <span class="text-danger">*</span></label>
+                <input type="date" id="addActiveDate" class="form-control" required>
               </div>
 
-              <!-- กลุ่มที่ 3: ไฟล์แนบ -->
-              <div class="add-group-box add-group-file">
-                <div class="add-group-title" style="color:#6d28d9;">
-                  <span class="badge text-white" style="background-color:#7c3aed;"><i class="fa-solid fa-paperclip"></i></span>
-                  <span>เอกสารหลักฐาน</span>
-                </div>
-                <label class="form-label"><i class="fa-solid fa-file-arrow-up me-1" style="color:#7c3aed;"></i>Upload ใบรับรอง / ใบอนุญาต (PDF หรือ รูปภาพ)</label>
-                <input type="file" id="addFile" class="form-control bg-white" accept=".pdf,image/*">
+              <div class="form-field-box" id="expireDateContainer">
+                <label class="form-label">วันที่หมดอายุ (Expire Date)</label>
+                <input type="date" id="addExpireDate" class="form-control">
               </div>
 
-              <div class="mt-4 d-flex justify-content-end">
+              <div class="form-field-box">
+                <label class="form-label">Upload ใบรับรอง / ใบอนุญาต (PDF หรือ รูปภาพ)</label>
+                <input type="file" id="addFile" class="form-control" accept=".pdf,image/*">
+              </div>
+
+              <div class="mt-2 d-flex justify-content-end">
                 <button type="submit" id="btnSubmitRecord" class="btn btn-success px-4 py-2 fw-bold rounded-pill">
                   <i class="fa-solid fa-paper-plane me-1"></i> ส่งข้อมูลบันทึก
                 </button>
@@ -561,7 +629,6 @@
             </div>
           </div>
 
-          <!-- การ์ดสรุป 7 สถานะ -->
           <div class="row g-2 mb-3">
             <div class="col-6 col-sm-4 col-lg">
               <div class="dash-stat-card card-all active-card" data-bucket="ALL" onclick="selectDashboardBucket('ALL')">
@@ -607,7 +674,6 @@
             </div>
           </div>
 
-          <!-- ตัวกรอง 6 ช่อง -->
           <div class="filter-panel mb-3">
             <div class="row g-2">
               <div class="col-6 col-md-2">
@@ -655,7 +721,6 @@
             </div>
           </div>
 
-          <!-- ตารางแสดงข้อมูล Dashboard -->
           <div class="card overflow-hidden">
             <div class="table-responsive">
               <table class="table table-hover table-bordered align-middle mb-0 small">
@@ -715,6 +780,93 @@
                 <tbody id="adminRecordsBody"></tbody>
               </table>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EXPERIENCE (เพิ่ม / แก้ไขประสบการณ์ทำงาน) -->
+  <div class="modal fade" id="expModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title fw-bold" id="expModalTitle">ประสบการณ์ทำงาน</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="expEditIndex">
+          <div class="mb-3">
+            <label class="form-label">ตำแหน่ง (Position)</label>
+            <input type="text" id="expModalPos" class="form-control" placeholder="เช่น Ground Instructor">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">หน่วยงาน / องค์กร</label>
+            <input type="text" id="expModalName" class="form-control" placeholder="เช่น Civil Aviation Training Center, Bangkok">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">ช่วงเวลา / ปี</label>
+            <input type="text" id="expModalYear" class="form-control" placeholder="เช่น 1 ต.ค. 2555 – ปัจจุบัน">
+          </div>
+        </div>
+        <div class="modal-footer justify-content-between">
+          <button type="button" id="btnDeleteExpModal" class="btn btn-outline-danger btn-sm hidden" onclick="deleteExpFromModal()">
+            <i class="fa-solid fa-trash-can me-1"></i> ลบรายการ
+          </button>
+          <div class="ms-auto d-flex gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="button" class="btn btn-success btn-sm px-3" onclick="saveExpFromModal()">บันทึก</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDUCATION (เพิ่ม / แก้ไขวุฒิการศึกษา) -->
+  <div class="modal fade" id="eduModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title fw-bold">ประวัติการศึกษา</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">ระดับการศึกษา</label>
+            <select id="eduModalLevel" class="form-select" onchange="onEduModalLevelChange()">
+              <option value="bachelor">ปริญญาตรี (Bachelor)</option>
+              <option value="master">ปริญญาโท (Master)</option>
+              <option value="doctor">ปริญญาเอก (Doctorate)</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">วุฒิการศึกษา / สาขา</label>
+            <input type="text" id="eduModalDeg" class="form-control" placeholder="เช่น Master of Science (Aviation Management)">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">สถาบันการศึกษา</label>
+            <input type="text" id="eduModalUni" class="form-control" placeholder="เช่น Eastern Asia University">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ปีที่จบ / วันที่จบ</label>
+            <input type="text" id="eduModalYear" class="form-control" placeholder="เช่น 15 พ.ค. 2559">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">ไฟล์แนบวุฒิการศึกษา</label>
+            <div class="d-flex align-items-center gap-2">
+              <input type="file" id="eduModalFileInput" class="form-control form-control-sm" onchange="handleEduModalFileUpload(this)">
+            </div>
+            <input type="hidden" id="eduModalFileUrl">
+            <div class="mt-1 small" id="eduModalFileStatus"></div>
+          </div>
+        </div>
+        <div class="modal-footer justify-content-between">
+          <button type="button" id="btnClearEduModal" class="btn btn-outline-danger btn-sm hidden" onclick="clearEduFromModal()">
+            <i class="fa-solid fa-trash-can me-1"></i> ล้างข้อมูลวุฒินี้
+          </button>
+          <div class="ms-auto d-flex gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="button" class="btn btn-primary btn-sm px-3" onclick="saveEduFromModal()">บันทึกวุฒิ</button>
           </div>
         </div>
       </div>
