@@ -9,12 +9,21 @@ let monitorRawData = { users: [], records: [], db: {} };
 let dashboardSortAsc = true;
 let liveClockTimer = null;
 
-// เก็บรายการประสบการณ์ทำงานและวุฒิการศึกษาในหน่วยความจำ
 let experienceItems = [];
 let educationStore = {
   bachelor: { year: '', deg: '', uni: '', file: '' },
   master:   { year: '', deg: '', uni: '', file: '' },
   doctor:   { year: '', deg: '', uni: '', file: '' }
+};
+
+const DAYSLEFT_META = {
+  EXPIRE:   { label: 'Expire',   symbol: '<span class="color-circle-dot" style="background-color:#ef4444;"></span>' },
+  WARNING:  { label: 'Warning',  symbol: '<span class="color-circle-dot" style="background-color:#f97316;"></span>' },
+  CAUTION:  { label: 'Caution',  symbol: '<span class="color-circle-dot" style="background-color:#facc15;"></span>' },
+  NORMAL:   { label: 'Normal',   symbol: '<span class="color-circle-dot" style="background-color:#22c55e;"></span>' },
+  EXEMPTED: { label: 'Exempted', symbol: '<span class="color-circle-dot" style="background-color:#e2e8f0;"></span>' },
+  PASS:     { label: 'Pass',     symbol: '<i class="fa-solid fa-check text-success" style="width:12px;"></i>' },
+  ALL:      { label: 'All',      symbol: '<span class="color-circle-dot" style="background-color:#3b82f6;"></span>' }
 };
 
 async function callApi(action, params = {}) {
@@ -203,7 +212,6 @@ function renderExperienceTimeline() {
 
   container.innerHTML = experienceItems.map((item, idx) => {
     const yearStr = String(item.year || '').trim();
-    const isCurrent = /ปัจจุบัน|present|current/i.test(yearStr) || idx === 0;
     const dotClass = idx === 0 ? 'current' : 'past';
     const currentBadge = idx === 0
       ? '<span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-1">ปัจจุบัน</span>'
@@ -282,14 +290,13 @@ function deleteExpFromModal() {
   bootstrap.Modal.getInstance(document.getElementById('expModal'))?.hide();
 }
 
+// แสดงเฉพาะระดับการศึกษาที่มีข้อมูลจริง (วุฒิ/สาขา, สถาบัน หรือปีที่จบ)[cite: 15]
 function hasEduContent(eduObj) {
   if (!eduObj) return false;
-  return Boolean(
-    String(eduObj.year || '').trim() ||
-    String(eduObj.deg || '').trim() ||
-    String(eduObj.uni || '').trim() ||
-    String(eduObj.file || '').trim()
-  );
+  const deg = String(eduObj.deg || '').trim();
+  const uni = String(eduObj.uni || '').trim();
+  const yr  = String(eduObj.year || '').trim();
+  return Boolean(deg || uni || yr);
 }
 
 function syncHiddenEduInputs() {
@@ -313,7 +320,6 @@ function renderEducationSection() {
   const badge = document.getElementById('eduCountBadge');
   if (!container) return;
 
-  // เรียงลำดับจากระดับสูงไปต่ำ (ปริญญาเอก -> ปริญญาโท -> ปริญญาตรี) เฉพาะที่มีข้อมูล
   const levels = [
     { key: 'doctor',   thTitle: 'ปริญญาเอก', badgeText: 'Doctorate' },
     { key: 'master',   thTitle: 'ปริญญาโท', badgeText: 'Master' },
@@ -330,7 +336,7 @@ function renderEducationSection() {
   container.innerHTML = levels.map(item => {
     const d = educationStore[item.key];
     const docLink = d.file
-      ? `<a href="${escapeAttr(d.file)}" target="_blank" class="doc-available-tag"><i class="fa-solid fa-file-circle-check me-1"></i>มีเอกสาร</a>`
+      ? `<a href="${escapeAttr(d.file)}" target="_blank" class="doc-available-tag" onclick="event.stopPropagation();"><i class="fa-solid fa-file-circle-check me-1"></i>มีเอกสาร</a>`
       : '';
 
     return `
@@ -355,7 +361,6 @@ function openEduModal(preselectLevel = null) {
   if (preselectLevel) {
     levelSel.value = preselectLevel;
   } else {
-    // เลือกระดับแรกที่ยังว่างอยู่ให้อัตโนมัติ
     const emptyLevel = ['bachelor', 'master', 'doctor'].find(k => !hasEduContent(educationStore[k]));
     levelSel.value = emptyLevel || 'bachelor';
   }
@@ -420,12 +425,16 @@ async function handleEduModalFileUpload(input) {
 
 function saveEduFromModal() {
   const key = document.getElementById('eduModalLevel').value;
-  educationStore[key] = {
-    deg: document.getElementById('eduModalDeg').value.trim(),
-    uni: document.getElementById('eduModalUni').value.trim(),
-    year: document.getElementById('eduModalYear').value.trim(),
-    file: document.getElementById('eduModalFileUrl').value.trim()
-  };
+  const deg = document.getElementById('eduModalDeg').value.trim();
+  const uni = document.getElementById('eduModalUni').value.trim();
+  const year = document.getElementById('eduModalYear').value.trim();
+  const file = document.getElementById('eduModalFileUrl').value.trim();
+
+  if (!deg && !uni && !year) {
+    return Swal.fire('แจ้งเตือน', 'กรุณากรอกวุฒิการศึกษา สถาบัน หรือปีที่จบ', 'warning');
+  }
+
+  educationStore[key] = { deg, uni, year, file };
   renderEducationSection();
   bootstrap.Modal.getInstance(document.getElementById('eduModal'))?.hide();
 }
@@ -714,7 +723,7 @@ function renderUserTrainingTable() {
   });
 }
 
-// ================= 4. ADD RECORD (PROGRESSIVE DISCLOSURE) =================
+// ================= 4. ADD RECORD =================
 function toggleExtraSubsPanel(forceOpen = null) {
   const panel = document.getElementById('extraSubsPanel');
   const chevron = document.getElementById('extraSubsChevron');
@@ -792,7 +801,6 @@ function onSub1Change() {
     hasSub2Options = true;
   }
 
-  // เปิดแผง Sub Type 2–3 อัตโนมัติเมื่อหมวดวิชามีตัวเลือก Sub 2 ให้กรอก
   if (hasSub2Options) {
     toggleExtraSubsPanel(true);
   }
@@ -1055,6 +1063,46 @@ function formatMonitorCellDays(days) {
 }
 
 // ================= 6. ADMIN: DASHBOARD OVERVIEW =================
+function toggleDaysLeftMenu(event) {
+  event.stopPropagation();
+  const pop = document.getElementById('daysLeftMenuPop');
+  if (!pop) return;
+  pop.classList.toggle('hidden');
+}
+
+document.addEventListener('click', function(event) {
+  const wrap = document.getElementById('daysLeftCustomDropdown');
+  const pop = document.getElementById('daysLeftMenuPop');
+  if (wrap && pop && !wrap.contains(event.target)) {
+    pop.classList.add('hidden');
+  }
+});
+
+function pickDaysLeftOption(bucket, event) {
+  if (event) event.stopPropagation();
+  syncDaysLeftDropdownUI(bucket);
+  const pop = document.getElementById('daysLeftMenuPop');
+  if (pop) pop.classList.add('hidden');
+  highlightDashboardCard(bucket);
+  renderDashboardTable();
+}
+
+function syncDaysLeftDropdownUI(bucket) {
+  const key = DAYSLEFT_META[bucket] ? bucket : 'ALL';
+  const hiddenSel = document.getElementById('dashFilterDaysLeft');
+  const labelEl = document.getElementById('daysLeftSelectedLabel');
+
+  if (hiddenSel) hiddenSel.value = key;
+  if (labelEl) {
+    const meta = DAYSLEFT_META[key];
+    labelEl.innerHTML = `${meta.symbol}<span>${meta.label}</span>`;
+  }
+
+  document.querySelectorAll('#daysLeftMenuPop .daysleft-option-item').forEach(btn => {
+    btn.classList.toggle('is-selected', btn.dataset.value === key);
+  });
+}
+
 function getRecordBucket(rec) {
   const status = String(rec.statusStr || '').trim().toLowerCase();
   if (status === 'exempted' || status === 'exempt') return 'EXEMPTED';
@@ -1136,14 +1184,7 @@ function syncDashboardCascade(resetSubs) {
 }
 
 function selectDashboardBucket(bucket) {
-  const sel = document.getElementById('dashFilterDaysLeft');
-  if (sel) sel.value = bucket;
-  highlightDashboardCard(bucket);
-  renderDashboardTable();
-}
-
-function onDashboardBucketDropdownChange() {
-  const bucket = document.getElementById('dashFilterDaysLeft')?.value || 'ALL';
+  syncDaysLeftDropdownUI(bucket);
   highlightDashboardCard(bucket);
   renderDashboardTable();
 }
