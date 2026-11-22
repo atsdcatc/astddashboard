@@ -36,6 +36,49 @@
     .edu-card.mast { border-top: 4px solid #0284c7; }
     .edu-card.doc  { border-top: 4px solid #4f46e5; }
 
+    .clock-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.45rem 1.15rem;
+      border: 1.5px solid #3b82f6;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #0d6efd;
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    .filter-panel {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 1rem 1.15rem;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+      border: 1px solid #e2e8f0;
+    }
+
+    .dash-stat-card {
+      border-radius: 12px;
+      padding: 0.85rem 0.5rem;
+      text-align: center;
+      color: #ffffff;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      user-select: none;
+    }
+    .dash-stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(15, 23, 42, 0.14); }
+    .dash-stat-card.active-card { outline: 3px solid #1e293b; outline-offset: 2px; }
+    .dash-stat-label { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.15rem; }
+    .dash-stat-val   { font-size: 1.65rem; font-weight: 700; line-height: 1.15; }
+
+    .card-all      { background-color: #0d6efd; }
+    .card-expire   { background-color: #dc3545; }
+    .card-warning  { background-color: #fd7e14; }
+    .card-caution  { background-color: #ffc107; color: #1e293b; }
+    .card-normal   { background-color: #198754; }
+    .card-exempted { background-color: #6c757d; }
+    .card-pass     { background-color: #20c997; color: #1e293b; }
+
     .badge-status { font-size: 0.85em; padding: 6px 10px; border-radius: 6px; }
     .hidden { display: none !important; }
     #loginSection.is-hidden { display: none !important; }
@@ -86,6 +129,7 @@
 
     <div class="container my-4">
       <ul class="nav nav-pills mb-4 bg-white p-2 rounded shadow-sm" id="mainTabs">
+        <!-- USER TABS -->
         <li class="nav-item user-only">
           <button type="button" id="tabBtnProfile" class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabProfile" onclick="loadProfileData()">
             <i class="fa-solid fa-id-card me-1"></i> 1. Background
@@ -101,19 +145,21 @@
             <i class="fa-solid fa-plus-circle me-1"></i> 3. Add Record
           </button>
         </li>
+
+        <!-- ADMIN TABS (3 เมนู: Monitor, Dashboard, Approved) -->
         <li class="nav-item admin-only hidden">
-          <button type="button" id="tabBtnAdminApprove" class="nav-link text-danger" data-bs-toggle="pill" data-bs-target="#tabAdminApprove" onclick="loadAdminRecords()">
-            <i class="fa-solid fa-check-double me-1"></i> 4. Approve (Admin)
+          <button type="button" id="tabBtnAdminMonitor" class="nav-link" data-bs-toggle="pill" data-bs-target="#tabAdminMonitor" onclick="loadMonitor()">
+            <i class="fa-solid fa-desktop me-1"></i> Monitor
           </button>
         </li>
         <li class="nav-item admin-only hidden">
-          <button type="button" id="tabBtnAdminDashboard" class="nav-link text-danger" data-bs-toggle="pill" data-bs-target="#tabAdminDashboard" onclick="loadAdminDashboard()">
-            <i class="fa-solid fa-chart-pie me-1"></i> Dashboard
+          <button type="button" id="tabBtnAdminDashboard" class="nav-link" data-bs-toggle="pill" data-bs-target="#tabAdminDashboard" onclick="loadAdminDashboard()">
+            <i class="fa-solid fa-chart-column me-1"></i> Dashboard
           </button>
         </li>
         <li class="nav-item admin-only hidden">
-          <button type="button" id="tabBtnAdminMonitor" class="nav-link text-danger" data-bs-toggle="pill" data-bs-target="#tabAdminMonitor" onclick="loadMonitor()">
-            <i class="fa-solid fa-chart-line me-1"></i> 5. Monitor (Admin)
+          <button type="button" id="tabBtnAdminApprove" class="nav-link" data-bs-toggle="pill" data-bs-target="#tabAdminApprove" onclick="loadAdminRecords()">
+            <i class="fa-solid fa-square-check me-1"></i> Approved
           </button>
         </li>
       </ul>
@@ -425,11 +471,222 @@
           </div>
         </div>
 
-        <!-- TAB 4: ADMIN APPROVE -->
+        <!-- TAB ADMIN 1: TRAINING MONITOR -->
+        <div class="tab-pane fade admin-only hidden" id="tabAdminMonitor">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+              <h3 class="fw-bold text-primary mb-2">Training Monitor</h3>
+              <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-success fw-bold px-3" onclick="loadMonitor()">
+                  <i class="fa-solid fa-rotate me-1"></i> Refresh Data
+                </button>
+                <a href="https://docs.google.com/spreadsheets/d/1y_0wk_q6CoRWzIO819eE4pBAwwtyWpy8HnG0cjfYVsg/edit" target="_blank" class="btn btn-primary fw-bold px-3">
+                  <i class="fa-solid fa-table me-1"></i> Open Google Sheet
+                </a>
+              </div>
+            </div>
+            <div class="clock-pill shadow-sm">
+              <span id="liveDateDisplay">-</span>
+              <span>|</span>
+              <span id="liveTimeDisplay" style="font-variant-numeric: tabular-nums;">--:--:--</span>
+            </div>
+          </div>
+
+          <div class="filter-panel mb-3">
+            <div class="row g-2">
+              <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold mb-1">Position</label>
+                <select id="monFilterPosition" class="form-select form-select-sm" onchange="renderMonitorMatrix()">
+                  <option value="ALL">All Positions</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold mb-1">ATO</label>
+                <select id="monFilterAto" class="form-select form-select-sm" onchange="onMonitorFilterChange()">
+                  <option value="ALL">All ATO</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold mb-1">Type</label>
+                <select id="monFilterType" class="form-select form-select-sm" onchange="onMonitorFilterChange()">
+                  <option value="ALL">All Types</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold mb-1">Sub Type 1</label>
+                <select id="monFilterSub1" class="form-select form-select-sm" onchange="onMonitorFilterChange()">
+                  <option value="ALL">All Sub 1</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold mb-1">Sub Type 2</label>
+                <select id="monFilterSub2" class="form-select form-select-sm" onchange="onMonitorFilterChange()">
+                  <option value="ALL">All Sub 2</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold mb-1">Sub Type 3</label>
+                <select id="monFilterSub3" class="form-select form-select-sm" onchange="renderMonitorMatrix()">
+                  <option value="ALL">All Sub 3</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="card overflow-hidden">
+            <div class="table-responsive">
+              <table class="table table-bordered table-hover align-middle mb-0 text-center">
+                <thead id="monitorMatrixHead" class="table-dark">
+                  <tr>
+                    <th class="text-start ps-3">Initial Name</th>
+                  </tr>
+                </thead>
+                <tbody id="monitorMatrixBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB ADMIN 2: DASHBOARD OVERVIEW -->
+        <div class="tab-pane fade admin-only hidden" id="tabAdminDashboard">
+          <div class="mb-3">
+            <h3 class="fw-bold text-primary mb-2">Dashboard Overview</h3>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-success fw-bold px-3" onclick="loadAdminDashboard()">
+                <i class="fa-solid fa-rotate me-1"></i> Refresh Data
+              </button>
+              <a href="https://docs.google.com/spreadsheets/d/1y_0wk_q6CoRWzIO819eE4pBAwwtyWpy8HnG0cjfYVsg/edit" target="_blank" class="btn btn-primary fw-bold px-3">
+                <i class="fa-solid fa-table me-1"></i> Open Google Sheet
+              </a>
+            </div>
+          </div>
+
+          <!-- การ์ดสรุป 7 สถานะ -->
+          <div class="row g-2 mb-3">
+            <div class="col-6 col-sm-4 col-lg">
+              <div class="dash-stat-card card-all active-card" data-bucket="ALL" onclick="selectDashboardBucket('ALL')">
+                <div class="dash-stat-label">All</div>
+                <div class="dash-stat-val" id="dashCountAll">0</div>
+              </div>
+            </div>
+            <div class="col-6 col-sm-4 col-lg">
+              <div class="dash-stat-card card-expire" data-bucket="EXPIRE" onclick="selectDashboardBucket('EXPIRE')">
+                <div class="dash-stat-label">Expire</div>
+                <div class="dash-stat-val" id="dashCountExpire">0</div>
+              </div>
+            </div>
+            <div class="col-6 col-sm-4 col-lg">
+              <div class="dash-stat-card card-warning" data-bucket="WARNING" onclick="selectDashboardBucket('WARNING')">
+                <div class="dash-stat-label">Warning</div>
+                <div class="dash-stat-val" id="dashCountWarning">0</div>
+              </div>
+            </div>
+            <div class="col-6 col-sm-4 col-lg">
+              <div class="dash-stat-card card-caution" data-bucket="CAUTION" onclick="selectDashboardBucket('CAUTION')">
+                <div class="dash-stat-label">Caution</div>
+                <div class="dash-stat-val" id="dashCountCaution">0</div>
+              </div>
+            </div>
+            <div class="col-6 col-sm-4 col-lg">
+              <div class="dash-stat-card card-normal" data-bucket="NORMAL" onclick="selectDashboardBucket('NORMAL')">
+                <div class="dash-stat-label">Normal</div>
+                <div class="dash-stat-val" id="dashCountNormal">0</div>
+              </div>
+            </div>
+            <div class="col-6 col-sm-4 col-lg">
+              <div class="dash-stat-card card-exempted" data-bucket="EXEMPTED" onclick="selectDashboardBucket('EXEMPTED')">
+                <div class="dash-stat-label">Exempted</div>
+                <div class="dash-stat-val" id="dashCountExempted">0</div>
+              </div>
+            </div>
+            <div class="col-6 col-sm-4 col-lg">
+              <div class="dash-stat-card card-pass" data-bucket="PASS" onclick="selectDashboardBucket('PASS')">
+                <div class="dash-stat-label">Pass</div>
+                <div class="dash-stat-val" id="dashCountPass">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ตัวกรอง 6 ช่อง -->
+          <div class="filter-panel mb-3">
+            <div class="row g-2">
+              <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold mb-1">Days Left</label>
+                <select id="dashFilterDaysLeft" class="form-select form-select-sm" onchange="onDashboardBucketDropdownChange()">
+                  <option value="ALL">All</option>
+                  <option value="EXPIRE">Expire</option>
+                  <option value="WARNING">Warning</option>
+                  <option value="CAUTION">Caution</option>
+                  <option value="NORMAL">Normal</option>
+                  <option value="EXEMPTED">Exempted</option>
+                  <option value="PASS">Pass</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold mb-1">Initial Name</label>
+                <select id="dashFilterInitial" class="form-select form-select-sm" onchange="renderDashboardTable()">
+                  <option value="ALL">All Names</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold mb-1">Type</label>
+                <select id="dashFilterType" class="form-select form-select-sm" onchange="onDashboardCascadeChange()">
+                  <option value="ALL">All Types</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold mb-1">Sub Type 1</label>
+                <select id="dashFilterSub1" class="form-select form-select-sm" onchange="onDashboardCascadeChange()">
+                  <option value="ALL">All Sub 1</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold mb-1">Sub Type 2</label>
+                <select id="dashFilterSub2" class="form-select form-select-sm" onchange="onDashboardCascadeChange()">
+                  <option value="ALL">All Sub 2</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold mb-1">Sub Type 3</label>
+                <select id="dashFilterSub3" class="form-select form-select-sm" onchange="renderDashboardTable()">
+                  <option value="ALL">All Sub 3</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- ตารางแสดงข้อมูล Dashboard -->
+          <div class="card overflow-hidden">
+            <div class="table-responsive">
+              <table class="table table-hover table-bordered align-middle mb-0 small">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Initial Name</th>
+                    <th>ATO</th>
+                    <th>Type</th>
+                    <th>Sub 1</th>
+                    <th>Sub 2</th>
+                    <th>Sub 3</th>
+                    <th class="text-nowrap">Active Date</th>
+                    <th class="text-nowrap">Expire Date</th>
+                    <th class="text-center text-nowrap text-warning" style="cursor:pointer;" onclick="toggleDashboardSort()">
+                      Days Left <i class="fa-solid fa-sort ms-1"></i>
+                    </th>
+                    <th class="text-center">Status</th>
+                    <th class="text-center">Evidence</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboardTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB ADMIN 3: APPROVED -->
         <div class="tab-pane fade admin-only hidden" id="tabAdminApprove">
           <div class="card p-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h5 class="fw-bold text-danger mb-0"><i class="fa-solid fa-user-shield me-2"></i>ตรวจสอบและอนุมัติรายการ (Admin)</h5>
+              <h5 class="fw-bold text-primary mb-0"><i class="fa-solid fa-user-shield me-2"></i>ตรวจสอบและอนุมัติรายการ (Approved)</h5>
               <div>
                 <select id="adminStatusFilter" class="form-select form-select-sm d-inline-block w-auto me-2" onchange="renderAdminTable()">
                   <option value="waiting approve">รอตรวจสอบ (Waiting Approve)</option>
@@ -437,7 +694,7 @@
                   <option value="approve">อนุมัติแล้ว (Approved)</option>
                   <option value="reject">ปฏิเสธ (Rejected)</option>
                 </select>
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="loadAdminRecords()"><i class="fa-solid fa-rotate"></i></button>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadAdminRecords()"><i class="fa-solid fa-rotate"></i></button>
               </div>
             </div>
             <div class="table-responsive">
@@ -456,84 +713,6 @@
                   </tr>
                 </thead>
                 <tbody id="adminRecordsBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB ADMIN DASHBOARD -->
-        <div class="tab-pane fade admin-only hidden" id="tabAdminDashboard">
-          <div class="card p-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-              <h5 class="fw-bold text-danger mb-0"><i class="fa-solid fa-chart-pie me-2"></i>ภาพรวมระบบ (Admin Dashboard)</h5>
-              <button type="button" class="btn btn-sm btn-outline-danger" onclick="loadAdminDashboard()">
-                <i class="fa-solid fa-rotate me-1"></i> รีเฟรช
-              </button>
-            </div>
-            <div class="row g-3" id="adminDashboardCards">
-              <div class="col-md-3">
-                <div class="p-3 rounded border bg-light">
-                  <div class="small text-muted">บุคลากรทั้งหมด</div>
-                  <div class="fs-4 fw-bold text-primary" id="dashTotalUsers">-</div>
-                </div>
-              </div>
-              <div class="col-md-3">
-                <div class="p-3 rounded border bg-light">
-                  <div class="small text-muted">รออนุมัติ (Waiting)</div>
-                  <div class="fs-4 fw-bold text-warning" id="dashWaitingCount">-</div>
-                </div>
-              </div>
-              <div class="col-md-3">
-                <div class="p-3 rounded border bg-light">
-                  <div class="small text-muted">อนุมัติแล้ว (Approved)</div>
-                  <div class="fs-4 fw-bold text-success" id="dashApprovedCount">-</div>
-                </div>
-              </div>
-              <div class="col-md-3">
-                <div class="p-3 rounded border bg-light">
-                  <div class="small text-muted">ใกล้หมดอายุ / หมดอายุ</div>
-                  <div class="fs-4 fw-bold text-danger" id="dashAlertCount">-</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB 5: ADMIN MONITOR -->
-        <div class="tab-pane fade admin-only hidden" id="tabAdminMonitor">
-          <div class="card p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h5 class="fw-bold text-danger mb-0"><i class="fa-solid fa-desktop me-2"></i>ติดตามสถานะการอบรมบุคลากร (Monitor)</h5>
-              <button type="button" class="btn btn-sm btn-outline-danger" onclick="loadMonitor()"><i class="fa-solid fa-rotate"></i> รีเฟรช</button>
-            </div>
-            <div class="row g-2 mb-3">
-              <div class="col-md-4">
-                <input type="text" id="monitorSearchUser" class="form-control form-control-sm" placeholder="ค้นหา Initial Name..." onkeyup="renderMonitorTable()">
-              </div>
-              <div class="col-md-4">
-                <input type="text" id="monitorSearchCourse" class="form-control form-control-sm" placeholder="ค้นหาชื่อวิชา / ใบอนุญาต..." onkeyup="renderMonitorTable()">
-              </div>
-              <div class="col-md-4">
-                <select id="monitorAlertFilter" class="form-select form-select-sm" onchange="renderMonitorTable()">
-                  <option value="all">แสดงทุกสถานะวันหมดอายุ</option>
-                  <option value="expired">หมดอายุแล้ว (Days Left <= 0)</option>
-                  <option value="warning">ใกล้หมดอายุ (1 - 90 วัน)</option>
-                </select>
-              </div>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-sm table-bordered table-hover align-middle">
-                <thead class="table-secondary">
-                  <tr>
-                    <th>Initial Name</th>
-                    <th>Position</th>
-                    <th>ATO</th>
-                    <th>Type</th>
-                    <th>Course / License</th>
-                    <th>Days Left</th>
-                  </tr>
-                </thead>
-                <tbody id="monitorTableBody"></tbody>
               </table>
             </div>
           </div>
