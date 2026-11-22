@@ -1,18 +1,14 @@
 // ⚠️ นำ URL ของ Google Apps Script Web App ที่ Deploy แล้วมาใส่ที่นี่
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzPWv0y79-Xr8xMhIV-zwO5rTkKCRgDhSfQmMzBg_QmvqTzl3SkUCzHnxoQrpu0Q6VIVQ/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 
 let currentUser = null;
 let dbOptions = null;
 let allAdminRecords = [];
 let monitorRawData = { users: [], records: [], db: {} };
 
-/**
- * ตัวช่วยเรียกฟังก์ชันฝั่ง Google Apps Script ผ่าน Web App Endpoint
- */
 async function callApi(action, params = {}) {
   const response = await fetch(GAS_WEB_APP_URL, {
     method: 'POST',
-    // ใช้ text/plain เพื่อลดปัญหา CORS preflight กับ Google Apps Script
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ action, params })
   });
@@ -65,9 +61,12 @@ async function initAppAfterLogin() {
   }
 
   try {
-    const opts = await callApi('getDatabaseOptions');
+    const [opts, posList] = await Promise.all([
+      callApi('getDatabaseOptions'),
+      callApi('getBgPositionOptions')
+    ]);
     dbOptions = opts;
-    populateSelect('bgPosition', opts.bgPositions || []);
+    populateSelect('bgPosition', posList || []);
     loadProfileData();
   } catch (err) {
     Swal.fire('Error', err.message, 'error');
@@ -126,10 +125,18 @@ async function loadProfileData() {
     document.getElementById('bgNameEN').value = data.nameEN || '';
     document.getElementById('bgNameTH').value = data.nameTH || '';
     document.getElementById('bgInitial').value = data.initialName || '';
-    document.getElementById('bgPosition').value = data.position || '';
     document.getElementById('bgDateStart').value = data.dateStart || '';
     document.getElementById('bgIdCard').value = data.idCard || '';
     document.getElementById('bgPicUrl').value = data.pic || '';
+
+    const posSelect = document.getElementById('bgPosition');
+    if (data.position && ![...posSelect.options].some(o => o.value === data.position)) {
+      const opt = document.createElement('option');
+      opt.value = data.position;
+      opt.text = data.position;
+      posSelect.appendChild(opt);
+    }
+    posSelect.value = data.position || '';
 
     document.getElementById('bgPicPreview').src = data.pic
       ? data.pic
