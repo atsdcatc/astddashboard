@@ -213,14 +213,14 @@ async function loadProfileData() {
   try {
     const data = await callApi('getBackgroundData', { initialName: currentUser.initialName });
     Swal.close();
-    if (data.error) {
+    if (data && data.error) {
       Swal.fire('แจ้งเตือน', data.error, 'warning');
       return;
     }
-    document.getElementById('bgRow').value = data.row;
+    document.getElementById('bgRow').value = data.row || '';
     document.getElementById('bgNameEN').value = data.nameEN || '';
     document.getElementById('bgNameTH').value = data.nameTH || '';
-    document.getElementById('bgInitial').value = data.initialName || '';
+    document.getElementById('bgInitial').value = data.initialName || currentUser.initialName || '';
     document.getElementById('bgDateStart').value = data.dateStart || '';
     document.getElementById('bgIdCard').value = data.idCard || '';
     document.getElementById('bgPicUrl').value = data.pic || '';
@@ -244,6 +244,10 @@ async function loadProfileData() {
       setEduFields('Bach', data.edu.bachelor);
       setEduFields('Mast', data.edu.master);
       setEduFields('Doc', data.edu.doctor);
+    } else {
+      setEduFields('Bach', {});
+      setEduFields('Mast', {});
+      setEduFields('Doc', {});
     }
   } catch (err) {
     Swal.close();
@@ -252,14 +256,14 @@ async function loadProfileData() {
 }
 
 function setEduFields(prefix, eduObj) {
-  if (!eduObj) return;
-  document.getElementById(`edu${prefix}Year`).value = eduObj.year || '';
-  document.getElementById(`edu${prefix}Deg`).value = eduObj.deg || '';
-  document.getElementById(`edu${prefix}Uni`).value = eduObj.uni || '';
-  document.getElementById(`edu${prefix}File`).value = eduObj.file || '';
+  const obj = eduObj || {};
+  document.getElementById(`edu${prefix}Year`).value = obj.year || '';
+  document.getElementById(`edu${prefix}Deg`).value = obj.deg || '';
+  document.getElementById(`edu${prefix}Uni`).value = obj.uni || '';
+  document.getElementById(`edu${prefix}File`).value = obj.file || '';
   const linkEl = document.getElementById(`edu${prefix}Link`);
-  if (eduObj.file) {
-    linkEl.href = eduObj.file;
+  if (obj.file) {
+    linkEl.href = obj.file;
     linkEl.classList.remove('hidden');
   } else {
     linkEl.classList.add('hidden');
@@ -278,7 +282,7 @@ function readFileAsBase64(file) {
 async function handleBgPicUpload(input) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
-  const row = document.getElementById('bgRow').value;
+  const row = Number(document.getElementById('bgRow').value) || null;
 
   Swal.fire({ title: 'กำลังอัปโหลดรูปภาพ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
   try {
@@ -308,7 +312,7 @@ async function handleBgPicUpload(input) {
 async function handleEduFileUpload(input, level, colIndex) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
-  const row = document.getElementById('bgRow').value;
+  const row = Number(document.getElementById('bgRow').value) || null;
   const prefix = level === 'bachelor' ? 'Bach' : (level === 'master' ? 'Mast' : 'Doc');
 
   Swal.fire({ title: 'กำลังอัปโหลดเอกสาร...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -339,10 +343,9 @@ async function handleEduFileUpload(input, level, colIndex) {
 }
 
 async function saveProfileData() {
-  const row = Number(document.getElementById('bgRow').value);
-  if (!row) return Swal.fire('ผิดพลาด', 'ไม่พบแถวข้อมูลในระบบ', 'error');
+  const row = Number(document.getElementById('bgRow').value) || null;
 
-  let expList = [];
+  const expList = [];
   for (let i = 0; i < MAX_EXPERIENCE; i++) {
     expList.push({
       year: (document.getElementById(`expYear_${i}`)?.value || '').trim(),
@@ -356,7 +359,7 @@ async function saveProfileData() {
     nameTH: document.getElementById('bgNameTH').value.trim(),
     dateStart: document.getElementById('bgDateStart').value.trim(),
     position: document.getElementById('bgPosition').value,
-    initialName: document.getElementById('bgInitial').value.trim(),
+    initialName: document.getElementById('bgInitial').value.trim() || currentUser.initialName,
     pic: document.getElementById('bgPicUrl').value,
     idCard: document.getElementById('bgIdCard').value.trim(),
     exp: expList,
@@ -387,6 +390,9 @@ async function saveProfileData() {
     const res = await callApi('updateBackgroundData', { row, d: payload });
     Swal.close();
     if (res.success) {
+      if (res.row) {
+        document.getElementById('bgRow').value = res.row;
+      }
       Swal.fire('บันทึกสำเร็จ', 'อัปเดตข้อมูลประวัติส่วนตัวเรียบร้อยแล้ว', 'success');
     } else {
       Swal.fire('เกิดข้อผิดพลาด', res.message, 'error');
