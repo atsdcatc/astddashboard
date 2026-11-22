@@ -1,8 +1,9 @@
 // ⚠️ นำ URL ของ Google Apps Script Web App ที่ Deploy แล้วมาใส่ที่นี่
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzPWv0y79-Xr8xMhIV-zwO5rTkKCRgDhSfQmMzBg_QmvqTzl3SkUCzHnxoQrpu0Q6VIVQ/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 
 let currentUser = null;
 let dbOptions = null;
+let userTrainingRecords = [];
 let allAdminRecords = [];
 let monitorRawData = { users: [], records: [], db: {} };
 
@@ -324,36 +325,88 @@ async function exportPDF() {
 // ================= 3. MY TRAINING =================
 async function loadUserTraining() {
   const tbody = document.getElementById('userTrainingBody');
-  tbody.innerHTML = '<tr><td colspan="9" class="text-center">กำลังโหลดข้อมูล...</td></tr>';
+  const summary = document.getElementById('trainingSummary');
+  tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">กำลังโหลดข้อมูล...</td></tr>';
+  summary.innerText = 'กำลังโหลดสรุปรายการ...';
 
   try {
     const records = await callApi('getTrainingRecords', { initialName: currentUser.initialName });
-    tbody.innerHTML = '';
-    if (!records || records.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">ไม่พบประวัติการฝึกอบรม</td></tr>';
-      return;
-    }
-    records.reverse().forEach(r => {
-      const subDetail = [r.sub2, r.sub3].filter(Boolean).join(' / ');
-      const badge = getStatusBadge(r.statusStr);
-      const fileBtn = r.link ? `<a href="${r.link}" target="_blank" class="btn btn-xs btn-outline-info py-0 px-2"><i class="fa-solid fa-link"></i></a>` : '-';
-      tbody.innerHTML += `
-        <tr>
-          <td>${r.ato || '-'}</td>
-          <td>${r.type || '-'}</td>
-          <td class="fw-semibold">${r.sub1 || '-'}</td>
-          <td>${subDetail || '-'}</td>
-          <td>${formatDateDisplay(r.active)}</td>
-          <td>${formatDateDisplay(r.expire)}</td>
-          <td class="text-center">${formatDaysLeft(r.daysLeft)}</td>
-          <td class="text-center">${badge}</td>
-          <td class="text-center">${fileBtn}</td>
-        </tr>
-      `;
+    userTrainingRecords = Array.isArray(records) ? [...records].reverse() : [];
+
+    const typeSelect = document.getElementById('trainingTypeFilter');
+    const currentTypeVal = typeSelect.value;
+    const uniqueTypes = [...new Set(userTrainingRecords.map(r => r.type).filter(Boolean))];
+    typeSelect.innerHTML = '<option value="all">ทุกประเภท (All Types)</option>';
+    uniqueTypes.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t;
+      opt.text = t;
+      typeSelect.appendChild(opt);
     });
+    if ([...typeSelect.options].some(o => o.value === currentTypeVal)) {
+      typeSelect.value = currentTypeVal;
+    }
+
+    updateTrainingSummary();
+    renderUserTrainingTable();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">${err.message}</td></tr>`;
+    summary.innerText = 'ไม่สามารถโหลดข้อมูลได้';
   }
+}
+
+function updateTrainingSummary() {
+  const summary = document.getElementById('trainingSummary');
+  const total = userTrainingRecords.length;
+  const approved = userTrainingRecords.filter(r => String(r.statusStr).toLowerCase() === 'approve').length;
+  const waiting = userTrainingRecords.filter(r => String(r.statusStr).toLowerCase() === 'waiting approve').length;
+  summary.innerHTML = `ทั้งหมด <strong>${total}</strong> รายการ • <span class="text-success">Approved ${approved}</span> • <span class="text-warning text-dark">Waiting ${waiting}</span>`;
+}
+
+function renderUserTrainingTable() {
+  const tbody = document.getElementById('userTrainingBody');
+  const keyword = (document.getElementById('trainingSearchInput')?.value || '').trim().toLowerCase();
+  const typeFilter = document.getElementById('trainingTypeFilter')?.value || 'all';
+  const statusFilter = (document.getElementById('trainingStatusFilter')?.value || 'all').toLowerCase();
+
+  const filtered = userTrainingRecords.filter(r => {
+    const matchType = typeFilter === 'all' || r.type === typeFilter;
+    const matchStatus = statusFilter === 'all' || String(r.statusStr || '').toLowerCase() === statusFilter;
+    const searchable = [r.ato, r.type, r.sub1, r.sub2, r.sub3].filter(Boolean).join(' ').toLowerCase();
+    const matchKeyword = !keyword || searchable.includes(keyword);
+    return matchType && matchStatus && matchKeyword;
+  });
+
+  tbody.innerHTML = '';
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</td></tr>';
+    return;
+  }
+
+  filtered.forEach(r => {
+    const mainTitle = r.sub2 || r.sub1 || '-';
+    const subMeta = [r.sub1, r.sub3 ? `Role: ${r.sub3}` : ''].filter(Boolean).join(' • ');
+    const categoryMeta = [r.ato, r.type].filter(Boolean).join(' • ');
+    const badge = getStatusBadge(r.statusStr);
+    const fileBtn = r.link
+      ? `<a href="${r.link}" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2 text-nowrap"><i class="fa-solid fa-file-lines me-1"></i>เปิดไฟล์</a>`
+      : '<span class="text-muted small">-</span>';
+
+    tbody.innerHTML += `
+      <tr>
+        <td class="py-2 small text-secondary">${categoryMeta || '-'}</td>
+        <td class="py-2">
+          <div class="fw-semibold text-dark">${mainTitle}</div>
+          ${subMeta ? `<div class="small text-muted">${subMeta}</div>` : ''}
+        </td>
+        <td class="py-2 text-nowrap small">${formatDateDisplay(r.active)}</td>
+        <td class="py-2 text-nowrap small">${formatDateDisplay(r.expire)}</td>
+        <td class="py-2 text-center text-nowrap">${formatDaysLeft(r.daysLeft)}</td>
+        <td class="py-2 text-center text-nowrap">${badge}</td>
+        <td class="py-2 text-center">${fileBtn}</td>
+      </tr>
+    `;
+  });
 }
 
 // ================= 4. ADD RECORD =================
