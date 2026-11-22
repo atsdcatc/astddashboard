@@ -1,5 +1,6 @@
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzPWv0y79-Xr8xMhIV-zwO5rTkKCRgDhSfQmMzBg_QmvqTzl3SkUCzHnxoQrpu0Q6VIVQ/exec';
 
+const MAX_EXPERIENCE = 6;
 let currentUser = null;
 let dbOptions = null;
 let userTrainingRecords = [];
@@ -106,19 +107,125 @@ async function changeUserPassword() {
 }
 
 // ================= 2. BACKGROUND PROFILE =================
+function renderExperienceSlots(expArray = []) {
+  const expContainer = document.getElementById('expContainer');
+  expContainer.innerHTML = '';
+
+  for (let i = 0; i < MAX_EXPERIENCE; i++) {
+    const item = expArray[i] || { year: '', pos: '', name: '' };
+    const hasData = Boolean(
+      String(item.year || '').trim() ||
+      String(item.pos || '').trim() ||
+      String(item.name || '').trim()
+    );
+    const shouldShow = hasData || (i === 0 && expArray.length === 0);
+
+    expContainer.innerHTML += `
+      <div id="expRow_${i}" class="col-12 ${shouldShow ? '' : 'hidden'}" data-visible="${shouldShow ? '1' : '0'}">
+        <div class="exp-item-card">
+          <div class="row g-2 align-items-center">
+            <div class="col-md-2">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white text-secondary"><i class="fa-regular fa-calendar"></i></span>
+                <input type="text" id="expYear_${i}" class="form-control" value="${escapeAttr(item.year || '')}" placeholder="ปี (เช่น 2020-2023)" oninput="updateExperienceBadge()">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white text-secondary"><i class="fa-solid fa-user-check"></i></span>
+                <input type="text" id="expPos_${i}" class="form-control" value="${escapeAttr(item.pos || '')}" placeholder="ตำแหน่ง" oninput="updateExperienceBadge()">
+              </div>
+            </div>
+            <div class="col-md-5">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white text-secondary"><i class="fa-solid fa-building"></i></span>
+                <input type="text" id="expName_${i}" class="form-control" value="${escapeAttr(item.name || '')}" placeholder="หน่วยงาน/องค์กร" oninput="updateExperienceBadge()">
+              </div>
+            </div>
+            <div class="col-md-1 text-end">
+              <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2" title="ลบรายการนี้" onclick="clearExperienceSlot(${i})">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  updateExperienceBadge();
+}
+
+function addExperienceSlot() {
+  for (let i = 0; i < MAX_EXPERIENCE; i++) {
+    const rowEl = document.getElementById(`expRow_${i}`);
+    if (rowEl && rowEl.dataset.visible !== '1') {
+      rowEl.dataset.visible = '1';
+      rowEl.classList.remove('hidden');
+      document.getElementById(`expYear_${i}`)?.focus();
+      updateExperienceBadge();
+      return;
+    }
+  }
+  Swal.fire('ครบจำนวนสูงสุดแล้ว', `สามารถเพิ่มประสบการณ์ทำงานได้สูงสุด ${MAX_EXPERIENCE} รายการ`, 'info');
+}
+
+function clearExperienceSlot(index) {
+  const yearEl = document.getElementById(`expYear_${index}`);
+  const posEl = document.getElementById(`expPos_${index}`);
+  const nameEl = document.getElementById(`expName_${index}`);
+  const rowEl = document.getElementById(`expRow_${index}`);
+
+  if (yearEl) yearEl.value = '';
+  if (posEl) posEl.value = '';
+  if (nameEl) nameEl.value = '';
+
+  const visibleCount = getVisibleExperienceCount();
+  if (visibleCount > 1 && rowEl) {
+    rowEl.dataset.visible = '0';
+    rowEl.classList.add('hidden');
+  }
+  updateExperienceBadge();
+}
+
+function getVisibleExperienceCount() {
+  let count = 0;
+  for (let i = 0; i < MAX_EXPERIENCE; i++) {
+    const rowEl = document.getElementById(`expRow_${i}`);
+    if (rowEl && rowEl.dataset.visible === '1') count++;
+  }
+  return count;
+}
+
+function getFilledExperienceCount() {
+  let count = 0;
+  for (let i = 0; i < MAX_EXPERIENCE; i++) {
+    const y = (document.getElementById(`expYear_${i}`)?.value || '').trim();
+    const p = (document.getElementById(`expPos_${i}`)?.value || '').trim();
+    const n = (document.getElementById(`expName_${i}`)?.value || '').trim();
+    if (y || p || n) count++;
+  }
+  return count;
+}
+
+function updateExperienceBadge() {
+  const badge = document.getElementById('expCountBadge');
+  const addBtn = document.getElementById('btnAddExp');
+  const filled = getFilledExperienceCount();
+  const visible = getVisibleExperienceCount();
+
+  if (badge) {
+    badge.innerText = `${filled} มีข้อมูล (${visible}/${MAX_EXPERIENCE} ช่อง)`;
+  }
+  if (addBtn) {
+    addBtn.disabled = visible >= MAX_EXPERIENCE;
+  }
+}
+
 async function loadProfileData() {
   if (!currentUser) return;
   Swal.showLoading();
-
-  const expContainer = document.getElementById('expContainer');
-  expContainer.innerHTML = '';
-  for (let i = 0; i < 6; i++) {
-    expContainer.innerHTML += `
-      <div class="col-md-2"><input type="text" id="expYear_${i}" class="form-control form-control-sm" placeholder="ปี (เช่น 2020-2023)"></div>
-      <div class="col-md-5"><input type="text" id="expPos_${i}" class="form-control form-control-sm" placeholder="ตำแหน่ง"></div>
-      <div class="col-md-5"><input type="text" id="expName_${i}" class="form-control form-control-sm" placeholder="หน่วยงาน/องค์กร"></div>
-    `;
-  }
+  renderExperienceSlots([]);
 
   try {
     const data = await callApi('getBackgroundData', { initialName: currentUser.initialName });
@@ -148,13 +255,7 @@ async function loadProfileData() {
       ? data.pic
       : 'https://via.placeholder.com/150?text=No+Image';
 
-    if (data.exp) {
-      data.exp.forEach((item, idx) => {
-        document.getElementById(`expYear_${idx}`).value = item.year || '';
-        document.getElementById(`expPos_${idx}`).value = item.pos || '';
-        document.getElementById(`expName_${idx}`).value = item.name || '';
-      });
-    }
+    renderExperienceSlots(Array.isArray(data.exp) ? data.exp : []);
 
     if (data.edu) {
       setEduFields('Bach', data.edu.bachelor);
@@ -259,11 +360,11 @@ async function saveProfileData() {
   if (!row) return Swal.fire('ผิดพลาด', 'ไม่พบแถวข้อมูลในระบบ', 'error');
 
   let expList = [];
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < MAX_EXPERIENCE; i++) {
     expList.push({
-      year: document.getElementById(`expYear_${i}`).value.trim(),
-      pos: document.getElementById(`expPos_${i}`).value.trim(),
-      name: document.getElementById(`expName_${i}`).value.trim()
+      year: (document.getElementById(`expYear_${i}`)?.value || '').trim(),
+      pos: (document.getElementById(`expPos_${i}`)?.value || '').trim(),
+      name: (document.getElementById(`expName_${i}`)?.value || '').trim()
     });
   }
 
@@ -676,6 +777,14 @@ function renderMonitorTable() {
 }
 
 // ================= HELPERS =================
+function escapeAttr(val) {
+  return String(val || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function populateSelect(elementId, items) {
   const sel = document.getElementById(elementId);
   if (!sel) return;
