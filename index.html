@@ -208,23 +208,46 @@
         <!-- TAB 2: MY TRAINING -->
         <div class="tab-pane fade" id="tabTraining">
           <div class="card p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h5 class="fw-bold text-primary mb-0"><i class="fa-solid fa-list-check me-2"></i>ประวัติการฝึกอบรมและใบอนุญาต</h5>
-              <button class="btn btn-sm btn-outline-primary" onclick="loadUserTraining()"><i class="fa-solid fa-rotate"></i> รีเฟรช</button>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <div>
+                <h5 class="fw-bold text-primary mb-1"><i class="fa-solid fa-list-check me-2"></i>ประวัติการฝึกอบรมและใบอนุญาต</h5>
+                <div id="trainingSummary" class="small text-muted">กำลังโหลดสรุปรายการ...</div>
+              </div>
+              <button class="btn btn-sm btn-outline-primary" onclick="loadUserTraining()">
+                <i class="fa-solid fa-rotate me-1"></i> รีเฟรช
+              </button>
             </div>
+
+            <div class="row g-2 mb-3 bg-light p-2 rounded border">
+              <div class="col-md-5">
+                <input type="text" id="trainingSearchInput" class="form-control form-control-sm" placeholder="ค้นหาชื่อหลักสูตร, ใบอนุญาต หรือ Role..." oninput="renderUserTrainingTable()">
+              </div>
+              <div class="col-md-4">
+                <select id="trainingTypeFilter" class="form-select form-select-sm" onchange="renderUserTrainingTable()">
+                  <option value="all">ทุกประเภท (All Types)</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <select id="trainingStatusFilter" class="form-select form-select-sm" onchange="renderUserTrainingTable()">
+                  <option value="all">ทุกสถานะ (All Status)</option>
+                  <option value="approve">Approved</option>
+                  <option value="waiting approve">Waiting Approve</option>
+                  <option value="reject">Rejected</option>
+                </select>
+              </div>
+            </div>
+
             <div class="table-responsive">
-              <table class="table table-hover table-bordered align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th>ATO</th>
-                    <th>Type</th>
-                    <th>Sub-Type 1</th>
-                    <th>Sub-Type 2 / Role</th>
-                    <th>Active Date</th>
-                    <th>Expire Date</th>
-                    <th>Days Left</th>
-                    <th>Status</th>
-                    <th>File</th>
+              <table class="table table-striped table-hover align-middle mb-0">
+                <thead class="table-light border-bottom">
+                  <tr class="small text-secondary">
+                    <th class="py-2">หมวด / ประเภท</th>
+                    <th class="py-2">หลักสูตร / ใบอนุญาต / Role</th>
+                    <th class="py-2 text-nowrap">Active Date</th>
+                    <th class="py-2 text-nowrap">Expire Date</th>
+                    <th class="py-2 text-center text-nowrap">Days Left</th>
+                    <th class="py-2 text-center">Status</th>
+                    <th class="py-2 text-center">File</th>
                   </tr>
                 </thead>
                 <tbody id="userTrainingBody"></tbody>
