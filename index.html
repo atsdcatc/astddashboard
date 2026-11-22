@@ -31,12 +31,12 @@
       </div>
       <form id="loginForm">
         <div class="mb-3">
-          <label class="form-label">Username (Initial Name)</label>
-          <input type="text" id="loginUser" class="form-control" required placeholder="กรอกชื่อย่อภาษาอังกฤษ">
+          <label class="form-label">Username</label>
+          <input type="text" id="loginUser" class="form-control" required placeholder="Initial Name">
         </div>
         <div class="mb-3">
           <label class="form-label">Password</label>
-          <input type="password" id="loginPass" class="form-control" required placeholder="กรอกรหัสผ่าน">
+          <input type="password" id="loginPass" class="form-control" required placeholder="Password">
         </div>
         <button type="submit" id="btnLogin" class="btn btn-primary w-100 py-2 fw-bold">
           <i class="fa-solid fa-right-to-bracket me-1"></i> เข้าสู่ระบบ
@@ -164,7 +164,7 @@
                   <div class="d-flex justify-content-between align-items-center mt-2">
                     <a id="eduBachLink" href="#" target="_blank" class="small text-decoration-none hidden"><i class="fa-solid fa-file-lines"></i> ดูไฟล์แนบ</a>
                     <label class="btn btn-xs btn-outline-secondary py-0 px-2 small">
-                      อัปโหลดไฟล์ <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'bachelor', 29)">
+                      Upload <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'bachelor', 29)">
                     </label>
                   </div>
                   <input type="hidden" id="eduBachFile">
@@ -180,7 +180,7 @@
                   <div class="d-flex justify-content-between align-items-center mt-2">
                     <a id="eduMastLink" href="#" target="_blank" class="small text-decoration-none hidden"><i class="fa-solid fa-file-lines"></i> ดูไฟล์แนบ</a>
                     <label class="btn btn-xs btn-outline-secondary py-0 px-2 small">
-                      อัปโหลดไฟล์ <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'master', 33)">
+                      Upload <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'master', 33)">
                     </label>
                   </div>
                   <input type="hidden" id="eduMastFile">
@@ -196,7 +196,7 @@
                   <div class="d-flex justify-content-between align-items-center mt-2">
                     <a id="eduDocLink" href="#" target="_blank" class="small text-decoration-none hidden"><i class="fa-solid fa-file-lines"></i> ดูไฟล์แนบ</a>
                     <label class="btn btn-xs btn-outline-secondary py-0 px-2 small">
-                      อัปโหลดไฟล์ <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'doctor', 37)">
+                      Upload <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'doctor', 37)">
                     </label>
                   </div>
                   <input type="hidden" id="eduDocFile">
@@ -296,7 +296,7 @@
                   <input type="date" id="addExpireDate" class="form-control">
                 </div>
                 <div class="col-12">
-                  <label class="form-label">แนบไฟล์ใบรับรอง / ใบอนุญาต (PDF หรือ รูปภาพ)</label>
+                  <label class="form-label">Upload ใบรับรอง / ใบอนุญาต (PDF หรือ รูปภาพ)</label>
                   <input type="file" id="addFile" class="form-control" accept=".pdf,image/*">
                 </div>
               </div>
@@ -397,7 +397,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <input type="password" id="newPasswordInput" class="form-control" placeholder="กรอกรหัสผ่านใหม่">
+          <input type="password" id="newPasswordInput" class="form-control" placeholder="Password">
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-primary btn-sm w-100" onclick="changeUserPassword()">บันทึกรหัสผ่าน</button>
