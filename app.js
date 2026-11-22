@@ -9,6 +9,14 @@ let monitorRawData = { users: [], records: [], db: {} };
 let dashboardSortAsc = true;
 let liveClockTimer = null;
 
+// เก็บรายการประสบการณ์ทำงานและวุฒิการศึกษาในหน่วยความจำ
+let experienceItems = [];
+let educationStore = {
+  bachelor: { year: '', deg: '', uni: '', file: '' },
+  master:   { year: '', deg: '', uni: '', file: '' },
+  doctor:   { year: '', deg: '', uni: '', file: '' }
+};
+
 async function callApi(action, params = {}) {
   const response = await fetch(GAS_WEB_APP_URL, {
     method: 'POST',
@@ -178,109 +186,268 @@ async function changeUserPassword() {
   }
 }
 
-// ================= 2. BACKGROUND PROFILE =================
-function renderExperienceSlots(expArray = []) {
-  const expContainer = document.getElementById('expContainer');
-  expContainer.innerHTML = '';
+// ================= 2. BACKGROUND PROFILE (TIMELINE & EDUCATION) =================
+function renderExperienceTimeline() {
+  const container = document.getElementById('expTimelineContainer');
+  const countText = document.getElementById('expCountText');
+  const addBtn = document.getElementById('btnAddExp');
+  if (!container) return;
 
-  for (let i = 0; i < MAX_EXPERIENCE; i++) {
-    const item = expArray[i] || { year: '', pos: '', name: '' };
-    const hasData = Boolean(
-      String(item.year || '').trim() ||
-      String(item.pos || '').trim() ||
-      String(item.name || '').trim()
-    );
-    const shouldShow = hasData || (i === 0 && expArray.length === 0);
+  if (countText) countText.innerText = `${experienceItems.length} รายการ`;
+  if (addBtn) addBtn.disabled = experienceItems.length >= MAX_EXPERIENCE;
 
-    expContainer.innerHTML += `
-      <div id="expRow_${i}" class="col-12 ${shouldShow ? '' : 'hidden'}" data-visible="${shouldShow ? '1' : '0'}">
-        <div class="exp-item-card">
-          <div class="row g-2 align-items-center">
-            <div class="col-sm-4 col-md-3">
-              <div class="input-group input-group-sm">
-                <span class="input-group-text bg-white text-success"><i class="fa-regular fa-calendar"></i></span>
-                <input type="text" id="expYear_${i}" class="form-control" value="${escapeAttr(item.year || '')}" placeholder="ปี / วันที่" oninput="updateExperienceButton()">
-              </div>
-            </div>
-            <div class="col-sm-8 col-md-4">
-              <div class="input-group input-group-sm">
-                <span class="input-group-text bg-white text-success"><i class="fa-solid fa-user-check"></i></span>
-                <input type="text" id="expPos_${i}" class="form-control" value="${escapeAttr(item.pos || '')}" placeholder="ตำแหน่ง" oninput="updateExperienceButton()">
-              </div>
-            </div>
-            <div class="col-10 col-md-4">
-              <div class="input-group input-group-sm">
-                <span class="input-group-text bg-white text-success"><i class="fa-solid fa-building"></i></span>
-                <input type="text" id="expName_${i}" class="form-control" value="${escapeAttr(item.name || '')}" placeholder="หน่วยงาน/องค์กร" oninput="updateExperienceButton()">
-              </div>
-            </div>
-            <div class="col-2 col-md-1 text-end">
-              <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2" title="ลบรายการนี้" onclick="clearExperienceSlot(${i})">
-                <i class="fa-solid fa-trash-can"></i>
-              </button>
-            </div>
+  if (experienceItems.length === 0) {
+    container.innerHTML = '<div class="text-muted small py-2">ยังไม่มีข้อมูลประสบการณ์ทำงาน กด "+ เพิ่มใหม่" เพื่อเพิ่มรายการ</div>';
+    return;
+  }
+
+  container.innerHTML = experienceItems.map((item, idx) => {
+    const yearStr = String(item.year || '').trim();
+    const isCurrent = /ปัจจุบัน|present|current/i.test(yearStr) || idx === 0;
+    const dotClass = idx === 0 ? 'current' : 'past';
+    const currentBadge = idx === 0
+      ? '<span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-1">ปัจจุบัน</span>'
+      : '';
+
+    return `
+      <div class="timeline-item">
+        <span class="timeline-dot ${dotClass}"></span>
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div>
+            <div class="fw-bold text-dark fs-6">${escapeHtml(item.pos || '-')}</div>
+            <div class="text-secondary small mt-1">${escapeHtml(item.name || '-')}</div>
+            <div class="text-muted small mt-1">${escapeHtml(yearStr || '-')}</div>
+          </div>
+          <div class="d-flex align-items-center gap-2 flex-shrink-0">
+            ${currentBadge}
+            <button type="button" class="btn btn-link text-secondary p-1" title="แก้ไขรายการนี้" onclick="openExpModal(${idx})">
+              <i class="fa-solid fa-pen"></i>
+            </button>
           </div>
         </div>
       </div>
     `;
-  }
-
-  updateExperienceButton();
+  }).join('');
 }
 
-function addExperienceSlot() {
-  for (let i = 0; i < MAX_EXPERIENCE; i++) {
-    const rowEl = document.getElementById(`expRow_${i}`);
-    if (rowEl && rowEl.dataset.visible !== '1') {
-      rowEl.dataset.visible = '1';
-      rowEl.classList.remove('hidden');
-      document.getElementById(`expYear_${i}`)?.focus();
-      updateExperienceButton();
-      return;
+function openExpModal(index) {
+  const isNew = index < 0;
+  document.getElementById('expModalTitle').innerText = isNew ? 'เพิ่มประสบการณ์ทำงาน' : 'แก้ไขประสบการณ์ทำงาน';
+  document.getElementById('expEditIndex').value = index;
+
+  const delBtn = document.getElementById('btnDeleteExpModal');
+  if (delBtn) delBtn.classList.toggle('hidden', isNew);
+
+  const item = !isNew && experienceItems[index]
+    ? experienceItems[index]
+    : { year: '', pos: '', name: '' };
+
+  document.getElementById('expModalPos').value = item.pos || '';
+  document.getElementById('expModalName').value = item.name || '';
+  document.getElementById('expModalYear').value = item.year || '';
+
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('expModal')).show();
+}
+
+function saveExpFromModal() {
+  const idx = Number(document.getElementById('expEditIndex').value);
+  const pos = document.getElementById('expModalPos').value.trim();
+  const name = document.getElementById('expModalName').value.trim();
+  const year = document.getElementById('expModalYear').value.trim();
+
+  if (!pos && !name && !year) {
+    return Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูลอย่างน้อย 1 ช่อง', 'warning');
+  }
+
+  const entry = { pos, name, year };
+  if (idx >= 0 && experienceItems[idx]) {
+    experienceItems[idx] = entry;
+  } else {
+    if (experienceItems.length >= MAX_EXPERIENCE) {
+      return Swal.fire('ครบจำนวนสูงสุดแล้ว', `เพิ่มได้สูงสุด ${MAX_EXPERIENCE} รายการ`, 'info');
     }
+    experienceItems.push(entry);
   }
-  Swal.fire('ครบจำนวนสูงสุดแล้ว', `สามารถเพิ่มประสบการณ์ทำงานได้สูงสุด ${MAX_EXPERIENCE} รายการ`, 'info');
+
+  renderExperienceTimeline();
+  bootstrap.Modal.getInstance(document.getElementById('expModal'))?.hide();
 }
 
-function clearExperienceSlot(index) {
-  const yearEl = document.getElementById(`expYear_${index}`);
-  const posEl = document.getElementById(`expPos_${index}`);
-  const nameEl = document.getElementById(`expName_${index}`);
-  const rowEl = document.getElementById(`expRow_${index}`);
-
-  if (yearEl) yearEl.value = '';
-  if (posEl) posEl.value = '';
-  if (nameEl) nameEl.value = '';
-
-  const visibleCount = getVisibleExperienceCount();
-  if (visibleCount > 1 && rowEl) {
-    rowEl.dataset.visible = '0';
-    rowEl.classList.add('hidden');
+function deleteExpFromModal() {
+  const idx = Number(document.getElementById('expEditIndex').value);
+  if (idx >= 0 && experienceItems[idx]) {
+    experienceItems.splice(idx, 1);
+    renderExperienceTimeline();
   }
-  updateExperienceButton();
+  bootstrap.Modal.getInstance(document.getElementById('expModal'))?.hide();
 }
 
-function getVisibleExperienceCount() {
-  let count = 0;
-  for (let i = 0; i < MAX_EXPERIENCE; i++) {
-    const rowEl = document.getElementById(`expRow_${i}`);
-    if (rowEl && rowEl.dataset.visible === '1') count++;
-  }
-  return count;
+function hasEduContent(eduObj) {
+  if (!eduObj) return false;
+  return Boolean(
+    String(eduObj.year || '').trim() ||
+    String(eduObj.deg || '').trim() ||
+    String(eduObj.uni || '').trim() ||
+    String(eduObj.file || '').trim()
+  );
 }
 
-function updateExperienceButton() {
-  const addBtn = document.getElementById('btnAddExp');
-  const visible = getVisibleExperienceCount();
-  if (addBtn) {
-    addBtn.disabled = visible >= MAX_EXPERIENCE;
+function syncHiddenEduInputs() {
+  const map = [
+    { key: 'bachelor', prefix: 'Bach' },
+    { key: 'master',   prefix: 'Mast' },
+    { key: 'doctor',   prefix: 'Doc' }
+  ];
+  map.forEach(({ key, prefix }) => {
+    const obj = educationStore[key] || {};
+    document.getElementById(`edu${prefix}Year`).value = obj.year || '';
+    document.getElementById(`edu${prefix}Deg`).value  = obj.deg || '';
+    document.getElementById(`edu${prefix}Uni`).value  = obj.uni || '';
+    document.getElementById(`edu${prefix}File`).value = obj.file || '';
+  });
+}
+
+function renderEducationSection() {
+  syncHiddenEduInputs();
+  const container = document.getElementById('eduListContainer');
+  const badge = document.getElementById('eduCountBadge');
+  if (!container) return;
+
+  // เรียงลำดับจากระดับสูงไปต่ำ (ปริญญาเอก -> ปริญญาโท -> ปริญญาตรี) เฉพาะที่มีข้อมูล
+  const levels = [
+    { key: 'doctor',   thTitle: 'ปริญญาเอก', badgeText: 'Doctorate' },
+    { key: 'master',   thTitle: 'ปริญญาโท', badgeText: 'Master' },
+    { key: 'bachelor', thTitle: 'ปริญญาตรี', badgeText: 'Bachelor' }
+  ].filter(item => hasEduContent(educationStore[item.key]));
+
+  if (badge) badge.innerText = `${levels.length} รายการ`;
+
+  if (levels.length === 0) {
+    container.innerHTML = '<div class="text-muted small">ยังไม่มีข้อมูลวุฒิการศึกษา กด "+ เพิ่มวุฒิการศึกษา" เพื่อเพิ่มข้อมูล</div>';
+    return;
   }
+
+  container.innerHTML = levels.map(item => {
+    const d = educationStore[item.key];
+    const docLink = d.file
+      ? `<a href="${escapeAttr(d.file)}" target="_blank" class="doc-available-tag"><i class="fa-solid fa-file-circle-check me-1"></i>มีเอกสาร</a>`
+      : '';
+
+    return `
+      <div class="edu-entry-card" style="cursor:pointer;" onclick="openEduModal('${item.key}')">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="fw-bold text-dark fs-6">${item.thTitle}</span>
+          <span class="edu-level-badge">${item.badgeText}</span>
+        </div>
+        <div class="text-secondary small">${escapeHtml(d.deg || '-')}</div>
+        <div class="text-muted small mb-2">${escapeHtml(d.uni || '-')}</div>
+        <div class="d-flex justify-content-between align-items-center pt-1">
+          <span class="text-muted small"><i class="fa-regular fa-calendar me-1"></i>${escapeHtml(d.year || '-')}</span>
+          ${docLink}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openEduModal(preselectLevel = null) {
+  const levelSel = document.getElementById('eduModalLevel');
+  if (preselectLevel) {
+    levelSel.value = preselectLevel;
+  } else {
+    // เลือกระดับแรกที่ยังว่างอยู่ให้อัตโนมัติ
+    const emptyLevel = ['bachelor', 'master', 'doctor'].find(k => !hasEduContent(educationStore[k]));
+    levelSel.value = emptyLevel || 'bachelor';
+  }
+  document.getElementById('eduModalFileInput').value = '';
+  onEduModalLevelChange();
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('eduModal')).show();
+}
+
+function onEduModalLevelChange() {
+  const key = document.getElementById('eduModalLevel').value;
+  const d = educationStore[key] || { year: '', deg: '', uni: '', file: '' };
+
+  document.getElementById('eduModalDeg').value = d.deg || '';
+  document.getElementById('eduModalUni').value = d.uni || '';
+  document.getElementById('eduModalYear').value = d.year || '';
+  document.getElementById('eduModalFileUrl').value = d.file || '';
+
+  const statusEl = document.getElementById('eduModalFileStatus');
+  if (statusEl) {
+    statusEl.innerHTML = d.file
+      ? `<span class="text-success"><i class="fa-solid fa-check-circle me-1"></i>มีไฟล์แนบแล้ว (<a href="${escapeAttr(d.file)}" target="_blank">เปิดดู</a>)</span>`
+      : '<span class="text-muted">ยังไม่มีไฟล์แนบ</span>';
+  }
+
+  const clearBtn = document.getElementById('btnClearEduModal');
+  if (clearBtn) {
+    clearBtn.classList.toggle('hidden', !hasEduContent(d));
+  }
+}
+
+async function handleEduModalFileUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const level = document.getElementById('eduModalLevel').value;
+  const colIndex = level === 'bachelor' ? 29 : (level === 'master' ? 33 : 37);
+  const row = Number(document.getElementById('bgRow').value) || null;
+
+  Swal.fire({ title: 'กำลังอัปโหลดเอกสาร...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  try {
+    const base64 = await readFileAsBase64(file);
+    const res = await callApi('uploadFileToDrive', {
+      base64Data: base64,
+      fileName: `${currentUser.initialName}_${level}_${file.name}`,
+      colIndex,
+      rowIndex: row,
+      sheetType: 'bg',
+      isImage: false
+    });
+    Swal.close();
+    if (res.success) {
+      document.getElementById('eduModalFileUrl').value = res.url;
+      document.getElementById('eduModalFileStatus').innerHTML =
+        `<span class="text-success"><i class="fa-solid fa-check-circle me-1"></i>อัปโหลดไฟล์เรียบร้อยแล้ว</span>`;
+    } else {
+      Swal.fire('ผิดพลาด', res.message, 'error');
+    }
+  } catch (err) {
+    Swal.close();
+    Swal.fire('Error', err.message, 'error');
+  }
+}
+
+function saveEduFromModal() {
+  const key = document.getElementById('eduModalLevel').value;
+  educationStore[key] = {
+    deg: document.getElementById('eduModalDeg').value.trim(),
+    uni: document.getElementById('eduModalUni').value.trim(),
+    year: document.getElementById('eduModalYear').value.trim(),
+    file: document.getElementById('eduModalFileUrl').value.trim()
+  };
+  renderEducationSection();
+  bootstrap.Modal.getInstance(document.getElementById('eduModal'))?.hide();
+}
+
+function clearEduFromModal() {
+  const key = document.getElementById('eduModalLevel').value;
+  educationStore[key] = { year: '', deg: '', uni: '', file: '' };
+  renderEducationSection();
+  bootstrap.Modal.getInstance(document.getElementById('eduModal'))?.hide();
 }
 
 async function loadProfileData() {
   if (!currentUser || currentUser.role === 'admin') return;
   Swal.showLoading();
-  renderExperienceSlots([]);
+  experienceItems = [];
+  educationStore = {
+    bachelor: { year: '', deg: '', uni: '', file: '' },
+    master:   { year: '', deg: '', uni: '', file: '' },
+    doctor:   { year: '', deg: '', uni: '', file: '' }
+  };
+  renderExperienceTimeline();
+  renderEducationSection();
 
   try {
     const data = await callApi('getBackgroundData', { initialName: currentUser.initialName });
@@ -310,35 +477,39 @@ async function loadProfileData() {
       ? data.pic
       : 'https://via.placeholder.com/150?text=No+Image';
 
-    renderExperienceSlots(Array.isArray(data.exp) ? data.exp : []);
+    experienceItems = (Array.isArray(data.exp) ? data.exp : [])
+      .filter(item =>
+        String(item.year || '').trim() ||
+        String(item.pos || '').trim() ||
+        String(item.name || '').trim()
+      )
+      .slice(0, MAX_EXPERIENCE);
+    renderExperienceTimeline();
 
-    if (data.edu) {
-      setEduFields('Bach', data.edu.bachelor);
-      setEduFields('Mast', data.edu.master);
-      setEduFields('Doc', data.edu.doctor);
-    } else {
-      setEduFields('Bach', {});
-      setEduFields('Mast', {});
-      setEduFields('Doc', {});
-    }
+    educationStore = {
+      bachelor: {
+        year: data.edu?.bachelor?.year || '',
+        deg:  data.edu?.bachelor?.deg  || '',
+        uni:  data.edu?.bachelor?.uni  || '',
+        file: data.edu?.bachelor?.file || ''
+      },
+      master: {
+        year: data.edu?.master?.year || '',
+        deg:  data.edu?.master?.deg  || '',
+        uni:  data.edu?.master?.uni  || '',
+        file: data.edu?.master?.file || ''
+      },
+      doctor: {
+        year: data.edu?.doctor?.year || '',
+        deg:  data.edu?.doctor?.deg  || '',
+        uni:  data.edu?.doctor?.uni  || '',
+        file: data.edu?.doctor?.file || ''
+      }
+    };
+    renderEducationSection();
   } catch (err) {
     Swal.close();
     Swal.fire('Error', err.message, 'error');
-  }
-}
-
-function setEduFields(prefix, eduObj) {
-  const obj = eduObj || {};
-  document.getElementById(`edu${prefix}Year`).value = obj.year || '';
-  document.getElementById(`edu${prefix}Deg`).value = obj.deg || '';
-  document.getElementById(`edu${prefix}Uni`).value = obj.uni || '';
-  document.getElementById(`edu${prefix}File`).value = obj.file || '';
-  const linkEl = document.getElementById(`edu${prefix}Link`);
-  if (obj.file) {
-    linkEl.href = obj.file;
-    linkEl.classList.remove('hidden');
-  } else {
-    linkEl.classList.add('hidden');
   }
 }
 
@@ -381,48 +552,17 @@ async function handleBgPicUpload(input) {
   }
 }
 
-async function handleEduFileUpload(input, level, colIndex) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-  const row = Number(document.getElementById('bgRow').value) || null;
-  const prefix = level === 'bachelor' ? 'Bach' : (level === 'master' ? 'Mast' : 'Doc');
-
-  Swal.fire({ title: 'กำลังอัปโหลดเอกสาร...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-  try {
-    const base64 = await readFileAsBase64(file);
-    const res = await callApi('uploadFileToDrive', {
-      base64Data: base64,
-      fileName: `${currentUser.initialName}_${level}_${file.name}`,
-      colIndex: colIndex,
-      rowIndex: row,
-      sheetType: 'bg',
-      isImage: false
-    });
-    Swal.close();
-    if (res.success) {
-      document.getElementById(`edu${prefix}File`).value = res.url;
-      const linkEl = document.getElementById(`edu${prefix}Link`);
-      linkEl.href = res.url;
-      linkEl.classList.remove('hidden');
-      Swal.fire('สำเร็จ', 'อัปโหลดไฟล์วุฒิการศึกษาเรียบร้อย', 'success');
-    } else {
-      Swal.fire('ผิดพลาด', res.message, 'error');
-    }
-  } catch (err) {
-    Swal.close();
-    Swal.fire('Error', err.message, 'error');
-  }
-}
-
 async function saveProfileData() {
+  syncHiddenEduInputs();
   const row = Number(document.getElementById('bgRow').value) || null;
 
   const expList = [];
   for (let i = 0; i < MAX_EXPERIENCE; i++) {
+    const item = experienceItems[i] || { year: '', pos: '', name: '' };
     expList.push({
-      year: (document.getElementById(`expYear_${i}`)?.value || '').trim(),
-      pos: (document.getElementById(`expPos_${i}`)?.value || '').trim(),
-      name: (document.getElementById(`expName_${i}`)?.value || '').trim()
+      year: String(item.year || '').trim(),
+      pos:  String(item.pos  || '').trim(),
+      name: String(item.name || '').trim()
     });
   }
 
@@ -436,24 +576,9 @@ async function saveProfileData() {
     idCard: document.getElementById('bgIdCard').value.trim(),
     exp: expList,
     edu: {
-      bachelor: {
-        year: document.getElementById('eduBachYear').value.trim(),
-        deg: document.getElementById('eduBachDeg').value.trim(),
-        uni: document.getElementById('eduBachUni').value.trim(),
-        file: document.getElementById('eduBachFile').value
-      },
-      master: {
-        year: document.getElementById('eduMastYear').value.trim(),
-        deg: document.getElementById('eduMastDeg').value.trim(),
-        uni: document.getElementById('eduMastUni').value.trim(),
-        file: document.getElementById('eduMastFile').value
-      },
-      doctor: {
-        year: document.getElementById('eduDocYear').value.trim(),
-        deg: document.getElementById('eduDocDeg').value.trim(),
-        uni: document.getElementById('eduDocUni').value.trim(),
-        file: document.getElementById('eduDocFile').value
-      }
+      bachelor: { ...educationStore.bachelor },
+      master:   { ...educationStore.master },
+      doctor:   { ...educationStore.doctor }
     }
   };
 
@@ -589,12 +714,26 @@ function renderUserTrainingTable() {
   });
 }
 
-// ================= 4. ADD RECORD =================
+// ================= 4. ADD RECORD (PROGRESSIVE DISCLOSURE) =================
+function toggleExtraSubsPanel(forceOpen = null) {
+  const panel = document.getElementById('extraSubsPanel');
+  const chevron = document.getElementById('extraSubsChevron');
+  if (!panel) return;
+
+  const shouldOpen = forceOpen !== null ? forceOpen : panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !shouldOpen);
+  if (chevron) {
+    chevron.classList.toggle('fa-chevron-down', !shouldOpen);
+    chevron.classList.toggle('fa-chevron-up', shouldOpen);
+  }
+}
+
 function initAddForm() {
   if (!dbOptions) return;
   populateSelect('addAto', dbOptions.ato);
   populateSelect('addType', dbOptions.type);
   populateSelect('addSub3', [''].concat(dbOptions.authSub3));
+  toggleExtraSubsPanel(false);
   onAtoOrTypeChange();
 }
 
@@ -635,22 +774,27 @@ function onSub1Change() {
   sub2TxtCont.classList.add('hidden');
   sub2Sel.innerHTML = '<option value="">-</option>';
 
+  let hasSub2Options = false;
   if (type === 'Optional Training' && sub1.toUpperCase() === 'OTHER') {
     sub2SelCont.classList.add('hidden');
     sub2TxtCont.classList.remove('hidden');
-    return;
+    hasSub2Options = true;
+  } else if (sub1 === 'Evaluation-Theory') {
+    const list = ato === 'ATCO' ? dbOptions.evalTheoryATCO : (ato === 'FOOTO' ? dbOptions.evalTheoryFOOTO : dbOptions.evalTheoryUATO);
+    populateSelect('addSub2Select', list || []);
+    hasSub2Options = Array.isArray(list) && list.length > 0;
+  } else if (sub1 === 'Evaluation-Practical') {
+    const list = ato === 'ATCO' ? dbOptions.evalPracATCO : (ato === 'FOOTO' ? dbOptions.evalPracFOOTO : dbOptions.evalPracUATO);
+    populateSelect('addSub2Select', list || []);
+    hasSub2Options = Array.isArray(list) && list.length > 0;
+  } else if (type === 'Personnel Licensing' && Array.isArray(dbOptions.licenceExtra) && dbOptions.licenceExtra.length > 0) {
+    populateSelect('addSub2Select', [''].concat(dbOptions.licenceExtra));
+    hasSub2Options = true;
   }
 
-  if (sub1 === 'Evaluation-Theory') {
-    if (ato === 'ATCO') populateSelect('addSub2Select', dbOptions.evalTheoryATCO);
-    else if (ato === 'FOOTO') populateSelect('addSub2Select', dbOptions.evalTheoryFOOTO);
-    else if (ato === 'UATO') populateSelect('addSub2Select', dbOptions.evalTheoryUATO);
-  } else if (sub1 === 'Evaluation-Practical') {
-    if (ato === 'ATCO') populateSelect('addSub2Select', dbOptions.evalPracATCO);
-    else if (ato === 'FOOTO') populateSelect('addSub2Select', dbOptions.evalPracFOOTO);
-    else if (ato === 'UATO') populateSelect('addSub2Select', dbOptions.evalPracUATO);
-  } else if (type === 'Personnel Licensing' && dbOptions.licenceExtra.length > 0) {
-    populateSelect('addSub2Select', [''].concat(dbOptions.licenceExtra));
+  // เปิดแผง Sub Type 2–3 อัตโนมัติเมื่อหมวดวิชามีตัวเลือก Sub 2 ให้กรอก
+  if (hasSub2Options) {
+    toggleExtraSubsPanel(true);
   }
 }
 
@@ -723,6 +867,7 @@ async function processFileAndSubmit(fileInput, payload) {
   await callApi('submitTrainingRecord', { data: payload });
   Swal.fire('สำเร็จ!', 'บันทึกข้อมูลเรียบร้อยแล้ว (รอ Admin อนุมัติ)', 'success');
   document.getElementById('addRecordForm').reset();
+  toggleExtraSubsPanel(false);
   onAtoOrTypeChange();
 }
 
@@ -763,7 +908,6 @@ function initMonitorFilters() {
   fillFilterDropdown('monFilterAto', atos, 'All ATO');
   fillFilterDropdown('monFilterType', types, 'All Types');
 
-  // ค่าเริ่มต้นเหมือนภาพตัวอย่าง (ATCO / Recurrent Training หากมีในรายการ)
   const atoSel = document.getElementById('monFilterAto');
   const typeSel = document.getElementById('monFilterType');
   if (atoSel && [...atoSel.options].some(o => o.value === 'ATCO')) atoSel.value = 'ATCO';
@@ -793,7 +937,6 @@ function syncMonitorCascadeOptions(resetSubFilters) {
     (type === 'ALL' || String(r.type || '').trim() === type)
   );
 
-  // ดึงตัวเลือก Sub 1 จากทั้งบันทึกจริงและรายการในฐานข้อมูล
   let dbSub1 = [];
   const tLower = type.toLowerCase();
   if (tLower === 'initial training') dbSub1 = monitorRawData.db.initial || [];
@@ -849,7 +992,6 @@ function renderMonitorMatrix() {
     return true;
   });
 
-  // กำหนดคอลัมน์หัวตาราง (ใช้ค่าจาก Sub 1 ที่กรอง หรือดึงรายการ Sub 1 ทั้งหมดในหมวดที่เลือก)
   let columnHeaders = [];
   if (sub1Filter !== 'ALL') {
     columnHeaders = [sub1Filter];
@@ -1028,7 +1170,6 @@ function renderDashboardTable() {
   const sub2Filter = document.getElementById('dashFilterSub2')?.value || 'ALL';
   const sub3Filter = document.getElementById('dashFilterSub3')?.value || 'ALL';
 
-  // กรองตามเงื่อนไขหลัก (ไม่รวม Days Left) เพื่ออัปเดตตัวเลขในการ์ดสรุปทั้ง 7 กล่อง
   const baseFiltered = allAdminRecords.filter(r => {
     if (String(r.statusStr || '').trim().toLowerCase() === 'reject') return false;
     if (nameFilter !== 'ALL' && String(r.initialName || '').trim() !== nameFilter) return false;
@@ -1053,7 +1194,6 @@ function renderDashboardTable() {
   document.getElementById('dashCountExempted').innerText = counts.EXEMPTED;
   document.getElementById('dashCountPass').innerText = counts.PASS;
 
-  // กรองขั้นสุดท้ายตาม Days Left Bucket
   const finalRows = baseFiltered
     .filter(r => bucketFilter === 'ALL' || getRecordBucket(r) === bucketFilter)
     .sort((a, b) => {
