@@ -124,25 +124,25 @@ function renderExperienceSlots(expArray = []) {
       <div id="expRow_${i}" class="col-12 ${shouldShow ? '' : 'hidden'}" data-visible="${shouldShow ? '1' : '0'}">
         <div class="exp-item-card">
           <div class="row g-2 align-items-center">
-            <div class="col-md-2">
+            <div class="col-sm-4 col-md-3">
               <div class="input-group input-group-sm">
-                <span class="input-group-text bg-white text-secondary"><i class="fa-regular fa-calendar"></i></span>
-                <input type="text" id="expYear_${i}" class="form-control" value="${escapeAttr(item.year || '')}" placeholder="ปี (เช่น 2020-2023)" oninput="updateExperienceBadge()">
+                <span class="input-group-text bg-white text-success"><i class="fa-regular fa-calendar"></i></span>
+                <input type="text" id="expYear_${i}" class="form-control" value="${escapeAttr(item.year || '')}" placeholder="ปี / วันที่" oninput="updateExperienceButton()">
               </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-sm-8 col-md-4">
               <div class="input-group input-group-sm">
-                <span class="input-group-text bg-white text-secondary"><i class="fa-solid fa-user-check"></i></span>
-                <input type="text" id="expPos_${i}" class="form-control" value="${escapeAttr(item.pos || '')}" placeholder="ตำแหน่ง" oninput="updateExperienceBadge()">
+                <span class="input-group-text bg-white text-success"><i class="fa-solid fa-user-check"></i></span>
+                <input type="text" id="expPos_${i}" class="form-control" value="${escapeAttr(item.pos || '')}" placeholder="ตำแหน่ง" oninput="updateExperienceButton()">
               </div>
             </div>
-            <div class="col-md-5">
+            <div class="col-10 col-md-4">
               <div class="input-group input-group-sm">
-                <span class="input-group-text bg-white text-secondary"><i class="fa-solid fa-building"></i></span>
-                <input type="text" id="expName_${i}" class="form-control" value="${escapeAttr(item.name || '')}" placeholder="หน่วยงาน/องค์กร" oninput="updateExperienceBadge()">
+                <span class="input-group-text bg-white text-success"><i class="fa-solid fa-building"></i></span>
+                <input type="text" id="expName_${i}" class="form-control" value="${escapeAttr(item.name || '')}" placeholder="หน่วยงาน/องค์กร" oninput="updateExperienceButton()">
               </div>
             </div>
-            <div class="col-md-1 text-end">
+            <div class="col-2 col-md-1 text-end">
               <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2" title="ลบรายการนี้" onclick="clearExperienceSlot(${i})">
                 <i class="fa-solid fa-trash-can"></i>
               </button>
@@ -153,7 +153,7 @@ function renderExperienceSlots(expArray = []) {
     `;
   }
 
-  updateExperienceBadge();
+  updateExperienceButton();
 }
 
 function addExperienceSlot() {
@@ -163,7 +163,7 @@ function addExperienceSlot() {
       rowEl.dataset.visible = '1';
       rowEl.classList.remove('hidden');
       document.getElementById(`expYear_${i}`)?.focus();
-      updateExperienceBadge();
+      updateExperienceButton();
       return;
     }
   }
@@ -185,7 +185,7 @@ function clearExperienceSlot(index) {
     rowEl.dataset.visible = '0';
     rowEl.classList.add('hidden');
   }
-  updateExperienceBadge();
+  updateExperienceButton();
 }
 
 function getVisibleExperienceCount() {
@@ -197,26 +197,9 @@ function getVisibleExperienceCount() {
   return count;
 }
 
-function getFilledExperienceCount() {
-  let count = 0;
-  for (let i = 0; i < MAX_EXPERIENCE; i++) {
-    const y = (document.getElementById(`expYear_${i}`)?.value || '').trim();
-    const p = (document.getElementById(`expPos_${i}`)?.value || '').trim();
-    const n = (document.getElementById(`expName_${i}`)?.value || '').trim();
-    if (y || p || n) count++;
-  }
-  return count;
-}
-
-function updateExperienceBadge() {
-  const badge = document.getElementById('expCountBadge');
+function updateExperienceButton() {
   const addBtn = document.getElementById('btnAddExp');
-  const filled = getFilledExperienceCount();
   const visible = getVisibleExperienceCount();
-
-  if (badge) {
-    badge.innerText = `${filled} มีข้อมูล (${visible}/${MAX_EXPERIENCE} ช่อง)`;
-  }
   if (addBtn) {
     addBtn.disabled = visible >= MAX_EXPERIENCE;
   }
