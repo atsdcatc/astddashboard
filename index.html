@@ -9,11 +9,17 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
-    body { font-family: 'Sarabun', sans-serif; background-color: #f0f4f8; }
+    body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; color: #1e293b; }
     .navbar-brand { font-weight: 700; letter-spacing: 0.5px; }
-    .profile-img { width: 140px; height: 140px; object-fit: cover; border-radius: 50%; border: 4px solid #0d6efd; background: #fff; }
+    .profile-img { width: 136px; height: 136px; object-fit: cover; border-radius: 50%; border: 3px solid #0d6efd; background: #fff; }
     .nav-pills .nav-link.active { background-color: #0d6efd; font-weight: 600; }
-    .card { border: none; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+    .card { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05); }
+    .section-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.15rem; }
+    .exp-item-card { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #0284c7; border-radius: 10px; padding: 0.75rem 0.9rem; }
+    .edu-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
+    .edu-card.bach { border-top: 4px solid #0d6efd; }
+    .edu-card.mast { border-top: 4px solid #0ea5e9; }
+    .edu-card.doc  { border-top: 4px solid #6366f1; }
     .badge-status { font-size: 0.85em; padding: 6px 10px; border-radius: 6px; }
     .hidden { display: none !important; }
     #loginSection.is-hidden { display: none !important; }
@@ -95,111 +101,161 @@
         <!-- TAB 1: BACKGROUND -->
         <div class="tab-pane fade show active" id="tabProfile">
           <div class="card p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-              <h5 class="fw-bold text-primary mb-0"><i class="fa-solid fa-user-tie me-2"></i>ข้อมูลประวัติส่วนตัว (Background)</h5>
-              <div>
-                <button type="button" class="btn btn-outline-danger btn-sm me-2" onclick="exportPDF()">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 pb-3 border-bottom">
+              <div class="d-flex align-items-center gap-2">
+                <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary bg-opacity-10 text-primary" style="width:38px;height:38px;">
+                  <i class="fa-solid fa-user-tie"></i>
+                </span>
+                <div>
+                  <h5 class="fw-bold text-primary mb-0">ข้อมูลประวัติส่วนตัว (Background)</h5>
+                  <small class="text-muted">จัดการข้อมูลส่วนตัว ประสบการณ์ทำงาน และวุฒิการศึกษา</small>
+                </div>
+              </div>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="exportPDF()">
                   <i class="fa-solid fa-file-pdf me-1"></i> Export Profile PDF
                 </button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="saveProfileData()" id="btnSaveBg">
+                <button type="button" class="btn btn-primary btn-sm px-3" onclick="saveProfileData()" id="btnSaveBg">
                   <i class="fa-solid fa-save me-1"></i> บันทึกการเปลี่ยนแปลง
                 </button>
               </div>
             </div>
 
             <input type="hidden" id="bgRow">
-            <div class="row g-3">
-              <div class="col-md-3 text-center">
-                <img id="bgPicPreview" src="https://via.placeholder.com/150?text=No+Image" class="profile-img mb-2 shadow-sm">
-                <div>
-                  <label class="btn btn-sm btn-outline-primary">
-                    <i class="fa-solid fa-camera me-1"></i> เปลี่ยนรูปภาพ
-                    <input type="file" id="bgPicInput" accept="image/*" class="hidden" onchange="handleBgPicUpload(this)">
-                  </label>
-                  <input type="hidden" id="bgPicUrl">
-                </div>
-              </div>
 
-              <div class="col-md-9">
-                <div class="row g-3">
-                  <div class="col-md-6">
-                    <label class="form-label">Name (EN)</label>
-                    <input type="text" id="bgNameEN" class="form-control">
+            <!-- ส่วนข้อมูลส่วนตัว -->
+            <div class="section-card mb-4">
+              <div class="row g-4 align-items-center">
+                <div class="col-md-3 text-center border-end-md">
+                  <img id="bgPicPreview" src="https://via.placeholder.com/150?text=No+Image" class="profile-img mb-2 shadow-sm">
+                  <div>
+                    <label class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                      <i class="fa-solid fa-camera me-1"></i> เปลี่ยนรูปภาพ
+                      <input type="file" id="bgPicInput" accept="image/*" class="hidden" onchange="handleBgPicUpload(this)">
+                    </label>
+                    <input type="hidden" id="bgPicUrl">
                   </div>
-                  <div class="col-md-6">
-                    <label class="form-label">ชื่อ-นามสกุล (TH)</label>
-                    <input type="text" id="bgNameTH" class="form-control">
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label">Initial Name</label>
-                    <input type="text" id="bgInitial" class="form-control bg-light" readonly>
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label">Position</label>
-                    <select id="bgPosition" class="form-select"></select>
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label">Start Date</label>
-                    <input type="text" id="bgDateStart" class="form-control" placeholder="dd/mm/yyyy">
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label">ID Card / Employee ID</label>
-                    <input type="text" id="bgIdCard" class="form-control">
+                </div>
+
+                <div class="col-md-9">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label small fw-semibold text-secondary"><i class="fa-solid fa-signature me-1 text-primary"></i>Name (EN)</label>
+                      <input type="text" id="bgNameEN" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small fw-semibold text-secondary"><i class="fa-solid fa-user me-1 text-primary"></i>ชื่อ-นามสกุล (TH)</label>
+                      <input type="text" id="bgNameTH" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label small fw-semibold text-secondary"><i class="fa-solid fa-tag me-1 text-primary"></i>Initial Name</label>
+                      <input type="text" id="bgInitial" class="form-control bg-light" readonly>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label small fw-semibold text-secondary"><i class="fa-solid fa-briefcase me-1 text-primary"></i>Position</label>
+                      <select id="bgPosition" class="form-select"></select>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label small fw-semibold text-secondary"><i class="fa-solid fa-calendar-day me-1 text-primary"></i>Start Date</label>
+                      <input type="text" id="bgDateStart" class="form-control" placeholder="dd/mm/yyyy">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small fw-semibold text-secondary"><i class="fa-solid fa-address-card me-1 text-primary"></i>ID Card / Employee ID</label>
+                      <input type="text" id="bgIdCard" class="form-control">
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <h6 class="fw-bold text-secondary mt-4 mb-2 border-bottom pb-1">ประสบการณ์ทำงาน (Experience)</h6>
-            <div id="expContainer" class="row g-2"></div>
-
-            <h6 class="fw-bold text-secondary mt-4 mb-2 border-bottom pb-1">ประวัติการศึกษา (Education)</h6>
-            <div class="row g-3">
-              <div class="col-md-4">
-                <div class="p-3 border rounded bg-light">
-                  <strong class="text-primary d-block mb-2">ปริญญาตรี (Bachelor)</strong>
-                  <input type="text" id="eduBachYear" class="form-control form-control-sm mb-2" placeholder="ปีที่จบ">
-                  <input type="text" id="eduBachDeg" class="form-control form-control-sm mb-2" placeholder="วุฒิการศึกษา / สาขา">
-                  <input type="text" id="eduBachUni" class="form-control form-control-sm mb-2" placeholder="สถาบันการศึกษา">
-                  <div class="d-flex justify-content-between align-items-center mt-2">
-                    <a id="eduBachLink" href="#" target="_blank" class="small text-decoration-none hidden"><i class="fa-solid fa-file-lines"></i> ดูไฟล์แนบ</a>
-                    <label class="btn btn-xs btn-outline-secondary py-0 px-2 small">
-                      Upload <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'bachelor', 29)">
-                    </label>
-                  </div>
-                  <input type="hidden" id="eduBachFile">
+            <!-- ส่วนประสบการณ์ทำงาน -->
+            <div class="section-card mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge bg-info bg-opacity-15 text-info border border-info-subtle px-2 py-1">
+                    <i class="fa-solid fa-briefcase me-1"></i> Experience
+                  </span>
+                  <h6 class="fw-bold text-dark mb-0">ประสบการณ์ทำงาน</h6>
+                  <span id="expCountBadge" class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary small">0 / 6</span>
                 </div>
+                <button type="button" id="btnAddExp" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="addExperienceSlot()">
+                  <i class="fa-solid fa-plus me-1"></i> เพิ่มประสบการณ์
+                </button>
+              </div>
+              <div id="expContainer" class="row g-2"></div>
+            </div>
+
+            <!-- ส่วนประวัติการศึกษา -->
+            <div class="section-card">
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-2 py-1">
+                  <i class="fa-solid fa-graduation-cap me-1"></i> Education
+                </span>
+                <h6 class="fw-bold text-dark mb-0">ประวัติการศึกษา</h6>
               </div>
 
-              <div class="col-md-4">
-                <div class="p-3 border rounded bg-light">
-                  <strong class="text-primary d-block mb-2">ปริญญาโท (Master)</strong>
-                  <input type="text" id="eduMastYear" class="form-control form-control-sm mb-2" placeholder="ปีที่จบ">
-                  <input type="text" id="eduMastDeg" class="form-control form-control-sm mb-2" placeholder="วุฒิการศึกษา / สาขา">
-                  <input type="text" id="eduMastUni" class="form-control form-control-sm mb-2" placeholder="สถาบันการศึกษา">
-                  <div class="d-flex justify-content-between align-items-center mt-2">
-                    <a id="eduMastLink" href="#" target="_blank" class="small text-decoration-none hidden"><i class="fa-solid fa-file-lines"></i> ดูไฟล์แนบ</a>
-                    <label class="btn btn-xs btn-outline-secondary py-0 px-2 small">
-                      Upload <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'master', 33)">
-                    </label>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <div class="edu-card bach">
+                    <div>
+                      <div class="d-flex align-items-center justify-content-between mb-2">
+                        <strong class="text-primary"><i class="fa-solid fa-user-graduate me-1"></i>ปริญญาตรี (Bachelor)</strong>
+                        <span class="badge bg-primary bg-opacity-10 text-primary small">B.Sc. / B.A.</span>
+                      </div>
+                      <input type="text" id="eduBachYear" class="form-control form-control-sm mb-2" placeholder="ปีที่จบ">
+                      <input type="text" id="eduBachDeg" class="form-control form-control-sm mb-2" placeholder="วุฒิการศึกษา / สาขา">
+                      <input type="text" id="eduBachUni" class="form-control form-control-sm mb-2" placeholder="สถาบันการศึกษา">
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center pt-2 mt-1 border-top">
+                      <a id="eduBachLink" href="#" target="_blank" class="small text-decoration-none hidden"><i class="fa-solid fa-file-lines me-1"></i>ดูไฟล์แนบ</a>
+                      <label class="btn btn-sm btn-outline-secondary py-0 px-2 small ms-auto">
+                        <i class="fa-solid fa-upload me-1"></i>Upload <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'bachelor', 29)">
+                      </label>
+                    </div>
+                    <input type="hidden" id="eduBachFile">
                   </div>
-                  <input type="hidden" id="eduMastFile">
                 </div>
-              </div>
 
-              <div class="col-md-4">
-                <div class="p-3 border rounded bg-light">
-                  <strong class="text-primary d-block mb-2">ปริญญาเอก (Doctorate)</strong>
-                  <input type="text" id="eduDocYear" class="form-control form-control-sm mb-2" placeholder="ปีที่จบ">
-                  <input type="text" id="eduDocDeg" class="form-control form-control-sm mb-2" placeholder="วุฒิการศึกษา / สาขา">
-                  <input type="text" id="eduDocUni" class="form-control form-control-sm mb-2" placeholder="สถาบันการศึกษา">
-                  <div class="d-flex justify-content-between align-items-center mt-2">
-                    <a id="eduDocLink" href="#" target="_blank" class="small text-decoration-none hidden"><i class="fa-solid fa-file-lines"></i> ดูไฟล์แนบ</a>
-                    <label class="btn btn-xs btn-outline-secondary py-0 px-2 small">
-                      Upload <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'doctor', 37)">
-                    </label>
+                <div class="col-md-4">
+                  <div class="edu-card mast">
+                    <div>
+                      <div class="d-flex align-items-center justify-content-between mb-2">
+                        <strong class="text-info"><i class="fa-solid fa-award me-1"></i>ปริญญาโท (Master)</strong>
+                        <span class="badge bg-info bg-opacity-10 text-info small">M.Sc. / M.A.</span>
+                      </div>
+                      <input type="text" id="eduMastYear" class="form-control form-control-sm mb-2" placeholder="ปีที่จบ">
+                      <input type="text" id="eduMastDeg" class="form-control form-control-sm mb-2" placeholder="วุฒิการศึกษา / สาขา">
+                      <input type="text" id="eduMastUni" class="form-control form-control-sm mb-2" placeholder="สถาบันการศึกษา">
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center pt-2 mt-1 border-top">
+                      <a id="eduMastLink" href="#" target="_blank" class="small text-decoration-none hidden"><i class="fa-solid fa-file-lines me-1"></i>ดูไฟล์แนบ</a>
+                      <label class="btn btn-sm btn-outline-secondary py-0 px-2 small ms-auto">
+                        <i class="fa-solid fa-upload me-1"></i>Upload <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'master', 33)">
+                      </label>
+                    </div>
+                    <input type="hidden" id="eduMastFile">
                   </div>
-                  <input type="hidden" id="eduDocFile">
+                </div>
+
+                <div class="col-md-4">
+                  <div class="edu-card doc">
+                    <div>
+                      <div class="d-flex align-items-center justify-content-between mb-2">
+                        <strong style="color:#4f46e5;"><i class="fa-solid fa-certificate me-1"></i>ปริญญาเอก (Doctorate)</strong>
+                        <span class="badge bg-opacity-10 small" style="background:rgba(79,70,229,0.1);color:#4f46e5;">Ph.D.</span>
+                      </div>
+                      <input type="text" id="eduDocYear" class="form-control form-control-sm mb-2" placeholder="ปีที่จบ">
+                      <input type="text" id="eduDocDeg" class="form-control form-control-sm mb-2" placeholder="วุฒิการศึกษา / สาขา">
+                      <input type="text" id="eduDocUni" class="form-control form-control-sm mb-2" placeholder="สถาบันการศึกษา">
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center pt-2 mt-1 border-top">
+                      <a id="eduDocLink" href="#" target="_blank" class="small text-decoration-none hidden"><i class="fa-solid fa-file-lines me-1"></i>ดูไฟล์แนบ</a>
+                      <label class="btn btn-sm btn-outline-secondary py-0 px-2 small ms-auto">
+                        <i class="fa-solid fa-upload me-1"></i>Upload <input type="file" class="hidden" onchange="handleEduFileUpload(this, 'doctor', 37)">
+                      </label>
+                    </div>
+                    <input type="hidden" id="eduDocFile">
+                  </div>
                 </div>
               </div>
             </div>
