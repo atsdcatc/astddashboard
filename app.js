@@ -25,6 +25,26 @@ async function callApi(action, params = {}) {
   return result.data;
 }
 
+function setActiveTab(buttonId, paneId) {
+  document.querySelectorAll('#mainTabs .nav-link').forEach(btn => {
+    btn.classList.remove('active');
+    btn.setAttribute('aria-selected', 'false');
+  });
+  document.querySelectorAll('.tab-content .tab-pane').forEach(pane => {
+    pane.classList.remove('active', 'show');
+  });
+
+  const targetBtn = document.getElementById(buttonId);
+  const targetPane = document.getElementById(paneId);
+  if (targetBtn) {
+    targetBtn.classList.add('active');
+    targetBtn.setAttribute('aria-selected', 'true');
+  }
+  if (targetPane) {
+    targetPane.classList.add('active', 'show');
+  }
+}
+
 // ================= 1. AUTHENTICATION =================
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
   e.preventDefault();
@@ -60,9 +80,21 @@ async function initAppAfterLogin() {
   document.getElementById('navUserDisplay').innerText = currentUser.initialName;
   document.getElementById('navRoleDisplay').innerText = currentUser.role.toUpperCase();
 
-  if (currentUser.role === 'admin') {
-    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+  const isAdmin = currentUser.role === 'admin';
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.classList.toggle('hidden', !isAdmin);
+  });
+  document.querySelectorAll('.user-only').forEach(el => {
+    el.classList.toggle('hidden', isAdmin);
+  });
+
+  if (isAdmin) {
+    setActiveTab('tabBtnAdminApprove', 'tabAdminApprove');
+    await loadAdminRecords();
+    return;
   }
+
+  setActiveTab('tabBtnProfile', 'tabProfile');
 
   try {
     const [opts, posList] = await Promise.all([
@@ -86,6 +118,8 @@ function logout() {
 
   document.getElementById('loginForm').reset();
   document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.user-only').forEach(el => el.classList.remove('hidden'));
+  setActiveTab('tabBtnProfile', 'tabProfile');
 }
 
 async function changeUserPassword() {
@@ -206,7 +240,7 @@ function updateExperienceButton() {
 }
 
 async function loadProfileData() {
-  if (!currentUser) return;
+  if (!currentUser || currentUser.role === 'admin') return;
   Swal.showLoading();
   renderExperienceSlots([]);
 
