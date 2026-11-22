@@ -20,6 +20,14 @@
     .section-exp     { background-color: #f0fdf4; border: 1px solid #bbf7d0; }
     .section-edu     { background-color: #f5f3ff; border: 1px solid #ddd6fe; }
 
+    .add-group-box { border-radius: 12px; padding: 1rem 1.15rem; }
+    .add-group-course { background-color: #f0f9ff; border: 1px solid #bae6fd; border-left: 4px solid #0284c7; }
+    .add-group-date   { background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; }
+    .add-group-file   { background-color: #faf5ff; border: 1px solid #e9d5ff; border-left: 4px solid #7c3aed; }
+
+    .add-group-title { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.45rem; }
+    .form-label { font-size: 0.875rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; }
+
     .exp-item-card { background: #ffffff; border: 1px solid #86efac; border-left: 4px solid #16a34a; border-radius: 10px; padding: 0.75rem 0.9rem; }
     .exp-item-card .form-control { min-width: 0; font-size: 0.875rem; }
 
@@ -155,27 +163,27 @@
                 <div class="col-lg-9">
                   <div class="row g-3">
                     <div class="col-md-6">
-                      <label class="form-label small fw-semibold text-dark"><i class="fa-solid fa-signature me-1 text-primary"></i>Name (EN)</label>
+                      <label class="form-label text-dark"><i class="fa-solid fa-signature me-1 text-primary"></i>Name (EN)</label>
                       <input type="text" id="bgNameEN" class="form-control bg-white">
                     </div>
                     <div class="col-md-6">
-                      <label class="form-label small fw-semibold text-dark"><i class="fa-solid fa-user me-1 text-primary"></i>ชื่อ-นามสกุล (TH)</label>
+                      <label class="form-label text-dark"><i class="fa-solid fa-user me-1 text-primary"></i>ชื่อ-นามสกุล (TH)</label>
                       <input type="text" id="bgNameTH" class="form-control bg-white">
                     </div>
                     <div class="col-md-4">
-                      <label class="form-label small fw-semibold text-dark"><i class="fa-solid fa-tag me-1 text-primary"></i>Initial Name</label>
+                      <label class="form-label text-dark"><i class="fa-solid fa-tag me-1 text-primary"></i>Initial Name</label>
                       <input type="text" id="bgInitial" class="form-control bg-light" readonly>
                     </div>
                     <div class="col-md-4">
-                      <label class="form-label small fw-semibold text-dark"><i class="fa-solid fa-briefcase me-1 text-primary"></i>Position</label>
+                      <label class="form-label text-dark"><i class="fa-solid fa-briefcase me-1 text-primary"></i>Position</label>
                       <select id="bgPosition" class="form-select bg-white"></select>
                     </div>
                     <div class="col-md-4">
-                      <label class="form-label small fw-semibold text-dark"><i class="fa-solid fa-calendar-day me-1 text-primary"></i>Start Date</label>
+                      <label class="form-label text-dark"><i class="fa-solid fa-calendar-day me-1 text-primary"></i>Start Date</label>
                       <input type="text" id="bgDateStart" class="form-control bg-white" placeholder="dd/mm/yyyy">
                     </div>
                     <div class="col-md-6">
-                      <label class="form-label small fw-semibold text-dark"><i class="fa-solid fa-address-card me-1 text-primary"></i>ID Card</label>
+                      <label class="form-label text-dark"><i class="fa-solid fa-address-card me-1 text-primary"></i>ID Card</label>
                       <input type="text" id="bgIdCard" class="form-control bg-white">
                     </div>
                   </div>
@@ -329,49 +337,82 @@
 
         <!-- TAB 3: ADD TRAINING RECORD -->
         <div class="tab-pane fade" id="tabAdd">
-          <div class="card p-4 mx-auto" style="max-width: 750px;">
-            <h5 class="fw-bold text-primary mb-3 border-bottom pb-2"><i class="fa-solid fa-folder-plus me-2"></i>บันทึกข้อมูลการฝึกอบรม / ใบอนุญาตใหม่</h5>
+          <div class="card p-4 mx-auto" style="max-width: 780px;">
+            <div class="d-flex align-items-center gap-2 mb-4 pb-3 border-bottom">
+              <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white" style="width:38px;height:38px;">
+                <i class="fa-solid fa-folder-plus"></i>
+              </span>
+              <div>
+                <h5 class="fw-bold text-primary mb-0">บันทึกข้อมูลการฝึกอบรม / ใบอนุญาตใหม่</h5>
+                <small class="text-muted">กรอกรายละเอียดหลักสูตรหรือใบอนุญาต และแนบหลักฐานเพื่อส่งตรวจสอบ</small>
+              </div>
+            </div>
+
             <form id="addRecordForm">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">ATO <span class="text-danger">*</span></label>
-                  <select id="addAto" class="form-select" required onchange="onAtoOrTypeChange()"></select>
+              <!-- กลุ่มที่ 1: รายละเอียดหลักสูตรและสิทธิ์ -->
+              <div class="add-group-box add-group-course mb-3">
+                <div class="add-group-title text-primary">
+                  <span class="badge bg-primary text-white"><i class="fa-solid fa-graduation-cap"></i></span>
+                  <span>รายละเอียดหลักสูตร / ใบอนุญาต</span>
                 </div>
-                <div class="col-md-6">
-                  <label class="form-label">Training / License Type <span class="text-danger">*</span></label>
-                  <select id="addType" class="form-select" required onchange="onAtoOrTypeChange()"></select>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Sub Type 1 (Course / License) <span class="text-danger">*</span></label>
-                  <select id="addSub1" class="form-select" required onchange="onSub1Change()"></select>
-                </div>
-                <div class="col-md-6" id="sub2SelectContainer">
-                  <label class="form-label">Sub Type 2</label>
-                  <select id="addSub2Select" class="form-select"></select>
-                </div>
-                <div class="col-md-6 hidden" id="sub2TextContainer">
-                  <label class="form-label">ระบุชื่อหลักสูตร / รายละเอียดเพิ่มเติม</label>
-                  <input type="text" id="addSub2Text" class="form-control" placeholder="พิมพ์ชื่อหลักสูตร...">
-                </div>
-                <div class="col-md-6" id="sub3Container">
-                  <label class="form-label">Role / Authorization (Sub Type 3)</label>
-                  <select id="addSub3" class="form-select"></select>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Active Date <span class="text-danger">*</span></label>
-                  <input type="date" id="addActiveDate" class="form-control" required>
-                </div>
-                <div class="col-md-6" id="expireDateContainer">
-                  <label class="form-label">Expire Date (ถ้ามี / คำนวณอัตโนมัติสำหรับบางวิชา)</label>
-                  <input type="date" id="addExpireDate" class="form-control">
-                </div>
-                <div class="col-12">
-                  <label class="form-label">Upload ใบรับรอง / ใบอนุญาต (PDF หรือ รูปภาพ)</label>
-                  <input type="file" id="addFile" class="form-control" accept=".pdf,image/*">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label"><i class="fa-solid fa-building-columns me-1 text-primary"></i>ATO <span class="text-danger">*</span></label>
+                    <select id="addAto" class="form-select bg-white" required onchange="onAtoOrTypeChange()"></select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label"><i class="fa-solid fa-certificate me-1 text-primary"></i>Training / License Type <span class="text-danger">*</span></label>
+                    <select id="addType" class="form-select bg-white" required onchange="onAtoOrTypeChange()"></select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label"><i class="fa-solid fa-book-open me-1 text-primary"></i>Sub Type 1 (Course / License) <span class="text-danger">*</span></label>
+                    <select id="addSub1" class="form-select bg-white" required onchange="onSub1Change()"></select>
+                  </div>
+                  <div class="col-md-6" id="sub2SelectContainer">
+                    <label class="form-label"><i class="fa-solid fa-layer-group me-1 text-primary"></i>Sub Type 2</label>
+                    <select id="addSub2Select" class="form-select bg-white"></select>
+                  </div>
+                  <div class="col-md-6 hidden" id="sub2TextContainer">
+                    <label class="form-label"><i class="fa-solid fa-pen-to-square me-1 text-primary"></i>ระบุชื่อหลักสูตร / รายละเอียดเพิ่มเติม</label>
+                    <input type="text" id="addSub2Text" class="form-control bg-white" placeholder="พิมพ์ชื่อหลักสูตร...">
+                  </div>
+                  <div class="col-md-6" id="sub3Container">
+                    <label class="form-label"><i class="fa-solid fa-user-shield me-1 text-primary"></i>Role / Authorization (Sub Type 3)</label>
+                    <select id="addSub3" class="form-select bg-white"></select>
+                  </div>
                 </div>
               </div>
-              <div class="mt-4 text-end">
-                <button type="submit" id="btnSubmitRecord" class="btn btn-success px-4 fw-bold">
+
+              <!-- กลุ่มที่ 2: วันที่มีผลและวันหมดอายุ -->
+              <div class="add-group-box add-group-date mb-3">
+                <div class="add-group-title text-success">
+                  <span class="badge bg-success text-white"><i class="fa-solid fa-calendar-days"></i></span>
+                  <span>ระยะเวลาที่มีผล</span>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label"><i class="fa-solid fa-calendar-check me-1 text-success"></i>Active Date <span class="text-danger">*</span></label>
+                    <input type="date" id="addActiveDate" class="form-control bg-white" required>
+                  </div>
+                  <div class="col-md-6" id="expireDateContainer">
+                    <label class="form-label"><i class="fa-solid fa-calendar-xmark me-1 text-danger"></i>Expire Date</label>
+                    <input type="date" id="addExpireDate" class="form-control bg-white">
+                  </div>
+                </div>
+              </div>
+
+              <!-- กลุ่มที่ 3: ไฟล์แนบ -->
+              <div class="add-group-box add-group-file">
+                <div class="add-group-title" style="color:#6d28d9;">
+                  <span class="badge text-white" style="background-color:#7c3aed;"><i class="fa-solid fa-paperclip"></i></span>
+                  <span>เอกสารหลักฐาน</span>
+                </div>
+                <label class="form-label"><i class="fa-solid fa-file-arrow-up me-1" style="color:#7c3aed;"></i>Upload ใบรับรอง / ใบอนุญาต (PDF หรือ รูปภาพ)</label>
+                <input type="file" id="addFile" class="form-control bg-white" accept=".pdf,image/*">
+              </div>
+
+              <div class="mt-4 d-flex justify-content-end">
+                <button type="submit" id="btnSubmitRecord" class="btn btn-success px-4 py-2 fw-bold rounded-pill">
                   <i class="fa-solid fa-paper-plane me-1"></i> ส่งข้อมูลบันทึก
                 </button>
               </div>
