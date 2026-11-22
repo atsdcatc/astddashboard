@@ -688,7 +688,7 @@ async function processFileAndSubmit(fileInput, payload) {
   onAtoOrTypeChange();
 }
 
-// ================= 5. ADMIN APPROVE & MONITOR =================
+// ================= 5. ADMIN APPROVE, DASHBOARD & MONITOR =================
 async function loadAdminRecords() {
   const tbody = document.getElementById('adminRecordsBody');
   tbody.innerHTML = '<tr><td colspan="9" class="text-center">กำลังโหลดข้อมูล...</td></tr>';
@@ -743,6 +743,38 @@ async function changeRecordStatus(row, status) {
       renderAdminTable();
       Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: `อัปเดตสถานะเป็น ${status} แล้ว`, showConfirmButton: false, timer: 1500 });
     }
+  } catch (err) {
+    Swal.fire('Error', err.message, 'error');
+  }
+}
+
+async function loadAdminDashboard() {
+  try {
+    const [allRecs, monData] = await Promise.all([
+      callApi('getAllTrainingRecords'),
+      callApi('getMonitorData')
+    ]);
+
+    const recs = Array.isArray(allRecs) ? allRecs : [];
+    const users = (monData && Array.isArray(monData.users)) ? monData.users : [];
+    const monRecs = (monData && Array.isArray(monData.records)) ? monData.records : [];
+
+    const waiting = recs.filter(r => String(r.statusStr || '').trim().toLowerCase() === 'waiting approve').length;
+    const approved = recs.filter(r => String(r.statusStr || '').trim().toLowerCase() === 'approve').length;
+    const alertCount = monRecs.filter(r => {
+      const d = Number(r.daysLeft);
+      return r.daysLeft !== '' && !isNaN(d) && d <= 90;
+    }).length;
+
+    const elUsers = document.getElementById('dashTotalUsers');
+    const elWaiting = document.getElementById('dashWaitingCount');
+    const elApproved = document.getElementById('dashApprovedCount');
+    const elAlert = document.getElementById('dashAlertCount');
+
+    if (elUsers) elUsers.innerText = users.length;
+    if (elWaiting) elWaiting.innerText = waiting;
+    if (elApproved) elApproved.innerText = approved;
+    if (elAlert) elAlert.innerText = alertCount;
   } catch (err) {
     Swal.fire('Error', err.message, 'error');
   }
