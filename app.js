@@ -6,6 +6,8 @@ let dbOptions = null;
 let userTrainingRecords = [];
 let allAdminRecords = [];
 let monitorRawData = { users: [], records: [], db: {} };
+let dashboardSortAsc = true;
+let liveClockTimer = null;
 
 async function callApi(action, params = {}) {
   const response = await fetch(GAS_WEB_APP_URL, {
@@ -42,6 +44,39 @@ function setActiveTab(buttonId, paneId) {
   }
   if (targetPane) {
     targetPane.classList.add('active', 'show');
+  }
+}
+
+// ================= LIVE CLOCK (MONITOR) =================
+function startLiveClock() {
+  stopLiveClock();
+  const updateClock = () => {
+    const now = new Date();
+    const dateEl = document.getElementById('liveDateDisplay');
+    const timeEl = document.getElementById('liveTimeDisplay');
+    if (dateEl) {
+      dateEl.innerText = now.toLocaleDateString('en-GB', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+    if (timeEl) {
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      timeEl.innerText = `${hh} : ${mm} : ${ss}`;
+    }
+  };
+  updateClock();
+  liveClockTimer = setInterval(updateClock, 1000);
+}
+
+function stopLiveClock() {
+  if (liveClockTimer) {
+    clearInterval(liveClockTimer);
+    liveClockTimer = null;
   }
 }
 
@@ -89,11 +124,13 @@ async function initAppAfterLogin() {
   });
 
   if (isAdmin) {
-    setActiveTab('tabBtnAdminApprove', 'tabAdminApprove');
-    await loadAdminRecords();
+    startLiveClock();
+    setActiveTab('tabBtnAdminMonitor', 'tabAdminMonitor');
+    await loadMonitor();
     return;
   }
 
+  stopLiveClock();
   setActiveTab('tabBtnProfile', 'tabProfile');
 
   try {
@@ -110,6 +147,7 @@ async function initAppAfterLogin() {
 }
 
 function logout() {
+  stopLiveClock();
   currentUser = null;
   const loginSec = document.getElementById('loginSection');
   const appSec = document.getElementById('appSection');
@@ -688,13 +726,387 @@ async function processFileAndSubmit(fileInput, payload) {
   onAtoOrTypeChange();
 }
 
-// ================= 5. ADMIN APPROVE, DASHBOARD & MONITOR =================
+// ================= 5. ADMIN: TRAINING MONITOR (MATRIX) =================
+async function loadMonitor() {
+  const body = document.getElementById('monitorMatrixBody');
+  if (body) {
+    body.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">กำลังโหลดข้อมูล Monitor...</td></tr>';
+  }
+  try {
+    const data = await callApi('getMonitorData');
+    monitorRawData = {
+      users: Array.isArray(data?.users) ? data.users : [],
+      records: Array.isArray(data?.records) ? data.records : [],
+      db: data?.db || {}
+    };
+    initMonitorFilters();
+    renderMonitorMatrix();
+  } catch (err) {
+    if (body) {
+      body.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">${err.message}</td></tr>`;
+    }
+  }
+}
+
+function initMonitorFilters() {
+  const positions = [...new Set(monitorRawData.users.map(u => String(u.position || '').trim()).filter(Boolean))].sort();
+  const atos = [...new Set([
+    ...(monitorRawData.db.ato || []),
+    ...monitorRawData.records.map(r => String(r.ato || '').trim())
+  ].filter(Boolean))];
+  const types = [...new Set([
+    ...(monitorRawData.db.type || []),
+    ...monitorRawData.records.map(r => String(r.type || '').trim())
+  ].filter(Boolean))];
+
+  fillFilterDropdown('monFilterPosition', positions, 'All Positions');
+  fillFilterDropdown('monFilterAto', atos, 'All ATO');
+  fillFilterDropdown('monFilterType', types, 'All Types');
+
+  // ค่าเริ่มต้นเหมือนภาพตัวอย่าง (ATCO / Recurrent Training หากมีในรายการ)
+  const atoSel = document.getElementById('monFilterAto');
+  const typeSel = document.getElementById('monFilterType');
+  if (atoSel && [...atoSel.options].some(o => o.value === 'ATCO')) atoSel.value = 'ATCO';
+  if (typeSel && [...typeSel.options].some(o => o.value === 'Recurrent Training')) typeSel.value = 'Recurrent Training';
+
+  syncMonitorCascadeOptions(true);
+}
+
+function onMonitorFilterChange() {
+  syncMonitorCascadeOptions(false);
+  renderMonitorMatrix();
+}
+
+function syncMonitorCascadeOptions(resetSubFilters) {
+  const ato = document.getElementById('monFilterAto')?.value || 'ALL';
+  const type = document.getElementById('monFilterType')?.value || 'ALL';
+  const sub1El = document.getElementById('monFilterSub1');
+  const sub2El = document.getElementById('monFilterSub2');
+  const sub3El = document.getElementById('monFilterSub3');
+
+  const prevSub1 = resetSubFilters ? 'ALL' : (sub1El?.value || 'ALL');
+  const prevSub2 = resetSubFilters ? 'ALL' : (sub2El?.value || 'ALL');
+  const prevSub3 = resetSubFilters ? 'ALL' : (sub3El?.value || 'ALL');
+
+  const baseRecs = monitorRawData.records.filter(r =>
+    (ato === 'ALL' || String(r.ato || '').trim() === ato) &&
+    (type === 'ALL' || String(r.type || '').trim() === type)
+  );
+
+  // ดึงตัวเลือก Sub 1 จากทั้งบันทึกจริงและรายการในฐานข้อมูล
+  let dbSub1 = [];
+  const tLower = type.toLowerCase();
+  if (tLower === 'initial training') dbSub1 = monitorRawData.db.initial || [];
+  else if (tLower === 'recurrent training') dbSub1 = monitorRawData.db.recurrent || [];
+  else if (tLower === 'continuing training') dbSub1 = monitorRawData.db.continuing || [];
+  else if (tLower === 'optional training') dbSub1 = monitorRawData.db.optional || [];
+  else if (tLower === 'personnel licensing') dbSub1 = monitorRawData.db.personnel || [];
+
+  const sub1List = [...new Set([
+    ...dbSub1,
+    ...baseRecs.map(r => String(r.sub1 || '').trim())
+  ].filter(Boolean))].sort();
+  fillFilterDropdown('monFilterSub1', sub1List, 'All Sub 1', prevSub1);
+
+  const activeSub1 = sub1El?.value || 'ALL';
+  const sub1Recs = baseRecs.filter(r => activeSub1 === 'ALL' || String(r.sub1 || '').trim() === activeSub1);
+
+  const sub2List = [...new Set(sub1Recs.map(r => String(r.sub2 || '').trim()).filter(Boolean))].sort();
+  fillFilterDropdown('monFilterSub2', sub2List, 'All Sub 2', prevSub2);
+
+  const activeSub2 = sub2El?.value || 'ALL';
+  const sub2Recs = sub1Recs.filter(r => activeSub2 === 'ALL' || String(r.sub2 || '').trim() === activeSub2);
+
+  const sub3List = [...new Set([
+    ...(monitorRawData.db.evalSub2 || []),
+    ...sub2Recs.map(r => String(r.sub3 || '').trim())
+  ].filter(Boolean))].sort();
+  fillFilterDropdown('monFilterSub3', sub3List, 'All Sub 3', prevSub3);
+}
+
+function renderMonitorMatrix() {
+  const headEl = document.getElementById('monitorMatrixHead');
+  const bodyEl = document.getElementById('monitorMatrixBody');
+  if (!headEl || !bodyEl) return;
+
+  const posFilter = document.getElementById('monFilterPosition')?.value || 'ALL';
+  const atoFilter = document.getElementById('monFilterAto')?.value || 'ALL';
+  const typeFilter = document.getElementById('monFilterType')?.value || 'ALL';
+  const sub1Filter = document.getElementById('monFilterSub1')?.value || 'ALL';
+  const sub2Filter = document.getElementById('monFilterSub2')?.value || 'ALL';
+  const sub3Filter = document.getElementById('monFilterSub3')?.value || 'ALL';
+
+  const filteredUsers = monitorRawData.users
+    .filter(u => posFilter === 'ALL' || String(u.position || '').trim() === posFilter)
+    .sort((a, b) => String(a.initialName).localeCompare(String(b.initialName)));
+
+  const filteredRecords = monitorRawData.records.filter(r => {
+    if (atoFilter !== 'ALL' && String(r.ato || '').trim() !== atoFilter) return false;
+    if (typeFilter !== 'ALL' && String(r.type || '').trim() !== typeFilter) return false;
+    if (sub1Filter !== 'ALL' && String(r.sub1 || '').trim() !== sub1Filter) return false;
+    if (sub2Filter !== 'ALL' && String(r.sub2 || '').trim() !== sub2Filter) return false;
+    if (sub3Filter !== 'ALL' && String(r.sub3 || '').trim() !== sub3Filter) return false;
+    return true;
+  });
+
+  // กำหนดคอลัมน์หัวตาราง (ใช้ค่าจาก Sub 1 ที่กรอง หรือดึงรายการ Sub 1 ทั้งหมดในหมวดที่เลือก)
+  let columnHeaders = [];
+  if (sub1Filter !== 'ALL') {
+    columnHeaders = [sub1Filter];
+  } else {
+    const availableOpts = [...(document.getElementById('monFilterSub1')?.options || [])]
+      .map(o => o.value)
+      .filter(v => v !== 'ALL');
+    columnHeaders = availableOpts.length > 0
+      ? availableOpts
+      : [...new Set(filteredRecords.map(r => String(r.sub1 || '').trim()).filter(Boolean))].sort();
+  }
+
+  headEl.innerHTML = `
+    <tr>
+      <th class="text-start ps-3" style="min-width: 140px;">Initial Name</th>
+      ${columnHeaders.map(col => `<th>${escapeHtml(col)}</th>`).join('')}
+    </tr>
+  `;
+
+  if (filteredUsers.length === 0) {
+    bodyEl.innerHTML = `<tr><td colspan="${columnHeaders.length + 1}" class="py-4 text-muted">ไม่พบรายชื่อบุคลากร</td></tr>`;
+    return;
+  }
+
+  bodyEl.innerHTML = filteredUsers.map(u => {
+    const userName = String(u.initialName || '').trim();
+    const userRecs = filteredRecords.filter(r => String(r.initialName || '').trim() === userName);
+
+    const cells = columnHeaders.map(colName => {
+      const matched = userRecs.filter(r => String(r.sub1 || '').trim() === colName);
+      if (matched.length === 0) {
+        return '<td class="text-muted">-</td>';
+      }
+      const cellContent = matched.map(m => {
+        const extra = [m.sub2, m.sub3].filter(Boolean).join(' / ');
+        const badge = formatMonitorCellDays(m.daysLeft);
+        return extra ? `<div class="small fw-semibold">${escapeHtml(extra)}</div>${badge}` : badge;
+      }).join('<hr class="my-1">');
+      return `<td>${cellContent}</td>`;
+    }).join('');
+
+    return `
+      <tr>
+        <td class="text-start ps-3 fw-bold text-primary">${escapeHtml(userName)}</td>
+        ${cells}
+      </tr>
+    `;
+  }).join('');
+}
+
+function formatMonitorCellDays(days) {
+  if (days === '' || days === null || days === undefined) {
+    return '<span class="badge bg-info text-dark">Pass</span>';
+  }
+  const n = Number(days);
+  if (isNaN(n)) return `<span class="badge bg-secondary">${escapeHtml(days)}</span>`;
+  if (n <= 0) return `<span class="badge bg-danger">${n} d</span>`;
+  if (n <= 30) return `<span class="badge" style="background:#fd7e14;">${n} d</span>`;
+  if (n <= 90) return `<span class="badge bg-warning text-dark">${n} d</span>`;
+  return `<span class="badge bg-success">${n} d</span>`;
+}
+
+// ================= 6. ADMIN: DASHBOARD OVERVIEW =================
+function getRecordBucket(rec) {
+  const status = String(rec.statusStr || '').trim().toLowerCase();
+  if (status === 'exempted' || status === 'exempt') return 'EXEMPTED';
+
+  const dVal = rec.daysLeft;
+  if (dVal === '' || dVal === null || dVal === undefined) {
+    return 'PASS';
+  }
+  const n = Number(dVal);
+  if (isNaN(n)) return 'PASS';
+  if (n <= 0) return 'EXPIRE';
+  if (n <= 30) return 'WARNING';
+  if (n <= 90) return 'CAUTION';
+  return 'NORMAL';
+}
+
+async function loadAdminDashboard() {
+  const tbody = document.getElementById('dashboardTableBody');
+  if (tbody) {
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-muted">กำลังโหลดข้อมูล Dashboard...</td></tr>';
+  }
+  try {
+    const res = await callApi('getAllTrainingRecords');
+    allAdminRecords = Array.isArray(res) ? res : [];
+    initDashboardFilters();
+    renderDashboardTable();
+  } catch (err) {
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4 text-danger">${err.message}</td></tr>`;
+    }
+  }
+}
+
+function initDashboardFilters() {
+  const validRecs = allAdminRecords.filter(r => String(r.statusStr || '').trim().toLowerCase() !== 'reject');
+
+  const names = [...new Set(validRecs.map(r => String(r.initialName || '').trim()).filter(Boolean))].sort();
+  const types = [...new Set(validRecs.map(r => String(r.type || '').trim()).filter(Boolean))].sort();
+
+  fillFilterDropdown('dashFilterInitial', names, 'All Names');
+  fillFilterDropdown('dashFilterType', types, 'All Types');
+  syncDashboardCascade(true);
+}
+
+function onDashboardCascadeChange() {
+  syncDashboardCascade(false);
+  renderDashboardTable();
+}
+
+function syncDashboardCascade(resetSubs) {
+  const typeVal = document.getElementById('dashFilterType')?.value || 'ALL';
+  const sub1El = document.getElementById('dashFilterSub1');
+  const sub2El = document.getElementById('dashFilterSub2');
+  const sub3El = document.getElementById('dashFilterSub3');
+
+  const prevSub1 = resetSubs ? 'ALL' : (sub1El?.value || 'ALL');
+  const prevSub2 = resetSubs ? 'ALL' : (sub2El?.value || 'ALL');
+  const prevSub3 = resetSubs ? 'ALL' : (sub3El?.value || 'ALL');
+
+  const validRecs = allAdminRecords.filter(r =>
+    String(r.statusStr || '').trim().toLowerCase() !== 'reject' &&
+    (typeVal === 'ALL' || String(r.type || '').trim() === typeVal)
+  );
+
+  const sub1List = [...new Set(validRecs.map(r => String(r.sub1 || '').trim()).filter(Boolean))].sort();
+  fillFilterDropdown('dashFilterSub1', sub1List, 'All Sub 1', prevSub1);
+
+  const activeSub1 = sub1El?.value || 'ALL';
+  const s1Recs = validRecs.filter(r => activeSub1 === 'ALL' || String(r.sub1 || '').trim() === activeSub1);
+
+  const sub2List = [...new Set(s1Recs.map(r => String(r.sub2 || '').trim()).filter(Boolean))].sort();
+  fillFilterDropdown('dashFilterSub2', sub2List, 'All Sub 2', prevSub2);
+
+  const activeSub2 = sub2El?.value || 'ALL';
+  const s2Recs = s1Recs.filter(r => activeSub2 === 'ALL' || String(r.sub2 || '').trim() === activeSub2);
+
+  const sub3List = [...new Set(s2Recs.map(r => String(r.sub3 || '').trim()).filter(Boolean))].sort();
+  fillFilterDropdown('dashFilterSub3', sub3List, 'All Sub 3', prevSub3);
+}
+
+function selectDashboardBucket(bucket) {
+  const sel = document.getElementById('dashFilterDaysLeft');
+  if (sel) sel.value = bucket;
+  highlightDashboardCard(bucket);
+  renderDashboardTable();
+}
+
+function onDashboardBucketDropdownChange() {
+  const bucket = document.getElementById('dashFilterDaysLeft')?.value || 'ALL';
+  highlightDashboardCard(bucket);
+  renderDashboardTable();
+}
+
+function highlightDashboardCard(bucket) {
+  document.querySelectorAll('.dash-stat-card').forEach(card => {
+    card.classList.toggle('active-card', card.dataset.bucket === bucket);
+  });
+}
+
+function toggleDashboardSort() {
+  dashboardSortAsc = !dashboardSortAsc;
+  renderDashboardTable();
+}
+
+function renderDashboardTable() {
+  const tbody = document.getElementById('dashboardTableBody');
+  if (!tbody) return;
+
+  const bucketFilter = document.getElementById('dashFilterDaysLeft')?.value || 'ALL';
+  const nameFilter = document.getElementById('dashFilterInitial')?.value || 'ALL';
+  const typeFilter = document.getElementById('dashFilterType')?.value || 'ALL';
+  const sub1Filter = document.getElementById('dashFilterSub1')?.value || 'ALL';
+  const sub2Filter = document.getElementById('dashFilterSub2')?.value || 'ALL';
+  const sub3Filter = document.getElementById('dashFilterSub3')?.value || 'ALL';
+
+  // กรองตามเงื่อนไขหลัก (ไม่รวม Days Left) เพื่ออัปเดตตัวเลขในการ์ดสรุปทั้ง 7 กล่อง
+  const baseFiltered = allAdminRecords.filter(r => {
+    if (String(r.statusStr || '').trim().toLowerCase() === 'reject') return false;
+    if (nameFilter !== 'ALL' && String(r.initialName || '').trim() !== nameFilter) return false;
+    if (typeFilter !== 'ALL' && String(r.type || '').trim() !== typeFilter) return false;
+    if (sub1Filter !== 'ALL' && String(r.sub1 || '').trim() !== sub1Filter) return false;
+    if (sub2Filter !== 'ALL' && String(r.sub2 || '').trim() !== sub2Filter) return false;
+    if (sub3Filter !== 'ALL' && String(r.sub3 || '').trim() !== sub3Filter) return false;
+    return true;
+  });
+
+  const counts = { ALL: baseFiltered.length, EXPIRE: 0, WARNING: 0, CAUTION: 0, NORMAL: 0, EXEMPTED: 0, PASS: 0 };
+  baseFiltered.forEach(r => {
+    const b = getRecordBucket(r);
+    if (counts[b] !== undefined) counts[b]++;
+  });
+
+  document.getElementById('dashCountAll').innerText = counts.ALL;
+  document.getElementById('dashCountExpire').innerText = counts.EXPIRE;
+  document.getElementById('dashCountWarning').innerText = counts.WARNING;
+  document.getElementById('dashCountCaution').innerText = counts.CAUTION;
+  document.getElementById('dashCountNormal').innerText = counts.NORMAL;
+  document.getElementById('dashCountExempted').innerText = counts.EXEMPTED;
+  document.getElementById('dashCountPass').innerText = counts.PASS;
+
+  // กรองขั้นสุดท้ายตาม Days Left Bucket
+  const finalRows = baseFiltered
+    .filter(r => bucketFilter === 'ALL' || getRecordBucket(r) === bucketFilter)
+    .sort((a, b) => {
+      const aNum = (a.daysLeft === '' || a.daysLeft === null || isNaN(Number(a.daysLeft))) ? 999999 : Number(a.daysLeft);
+      const bNum = (b.daysLeft === '' || b.daysLeft === null || isNaN(Number(b.daysLeft))) ? 999999 : Number(b.daysLeft);
+      return dashboardSortAsc ? (aNum - bNum) : (bNum - aNum);
+    });
+
+  if (finalRows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-muted">No records found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = finalRows.map(r => {
+    const evidence = r.link
+      ? `<a href="${r.link}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2"><i class="fa-solid fa-file-lines me-1"></i>View</a>`
+      : '-';
+    return `
+      <tr>
+        <td class="fw-bold">${escapeHtml(r.initialName || '-')}</td>
+        <td>${escapeHtml(r.ato || '-')}</td>
+        <td>${escapeHtml(r.type || '-')}</td>
+        <td>${escapeHtml(r.sub1 || '-')}</td>
+        <td>${escapeHtml(r.sub2 || '-')}</td>
+        <td>${escapeHtml(r.sub3 || '-')}</td>
+        <td class="text-nowrap">${formatDateDisplay(r.active)}</td>
+        <td class="text-nowrap">${formatDateDisplay(r.expire)}</td>
+        <td class="text-center text-nowrap">${formatDashboardDaysLeft(r)}</td>
+        <td class="text-center">${getStatusBadge(r.statusStr)}</td>
+        <td class="text-center">${evidence}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function formatDashboardDaysLeft(rec) {
+  const bucket = getRecordBucket(rec);
+  if (bucket === 'EXEMPTED') return '<span class="badge bg-secondary">Exempted</span>';
+  if (bucket === 'PASS') return '<span class="badge" style="background:#20c997;color:#1e293b;">Pass</span>';
+  const n = Number(rec.daysLeft);
+  if (bucket === 'EXPIRE') return `<span class="badge bg-danger">Expire (${n})</span>`;
+  if (bucket === 'WARNING') return `<span class="badge" style="background:#fd7e14;">${n} วัน</span>`;
+  if (bucket === 'CAUTION') return `<span class="badge bg-warning text-dark">${n} วัน</span>`;
+  return `<span class="badge bg-success">${n} วัน</span>`;
+}
+
+// ================= 7. ADMIN: APPROVED =================
 async function loadAdminRecords() {
   const tbody = document.getElementById('adminRecordsBody');
   tbody.innerHTML = '<tr><td colspan="9" class="text-center">กำลังโหลดข้อมูล...</td></tr>';
   try {
     const res = await callApi('getAllTrainingRecords');
-    allAdminRecords = res.reverse();
+    allAdminRecords = [...res].reverse();
     renderAdminTable();
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">${err.message}</td></tr>`;
@@ -706,7 +1118,7 @@ function renderAdminTable() {
   const tbody = document.getElementById('adminRecordsBody');
   tbody.innerHTML = '';
 
-  const filtered = allAdminRecords.filter(r => filter === 'all' || r.statusStr.toLowerCase() === filter);
+  const filtered = allAdminRecords.filter(r => filter === 'all' || String(r.statusStr || '').toLowerCase() === filter);
   if (filtered.length === 0) {
     tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">ไม่มีรายการในหมวดหมู่นี้</td></tr>';
     return;
@@ -748,90 +1160,27 @@ async function changeRecordStatus(row, status) {
   }
 }
 
-async function loadAdminDashboard() {
-  try {
-    const [allRecs, monData] = await Promise.all([
-      callApi('getAllTrainingRecords'),
-      callApi('getMonitorData')
-    ]);
-
-    const recs = Array.isArray(allRecs) ? allRecs : [];
-    const users = (monData && Array.isArray(monData.users)) ? monData.users : [];
-    const monRecs = (monData && Array.isArray(monData.records)) ? monData.records : [];
-
-    const waiting = recs.filter(r => String(r.statusStr || '').trim().toLowerCase() === 'waiting approve').length;
-    const approved = recs.filter(r => String(r.statusStr || '').trim().toLowerCase() === 'approve').length;
-    const alertCount = monRecs.filter(r => {
-      const d = Number(r.daysLeft);
-      return r.daysLeft !== '' && !isNaN(d) && d <= 90;
-    }).length;
-
-    const elUsers = document.getElementById('dashTotalUsers');
-    const elWaiting = document.getElementById('dashWaitingCount');
-    const elApproved = document.getElementById('dashApprovedCount');
-    const elAlert = document.getElementById('dashAlertCount');
-
-    if (elUsers) elUsers.innerText = users.length;
-    if (elWaiting) elWaiting.innerText = waiting;
-    if (elApproved) elApproved.innerText = approved;
-    if (elAlert) elAlert.innerText = alertCount;
-  } catch (err) {
-    Swal.fire('Error', err.message, 'error');
-  }
-}
-
-async function loadMonitor() {
-  const tbody = document.getElementById('monitorTableBody');
-  tbody.innerHTML = '<tr><td colspan="6" class="text-center">กำลังโหลดข้อมูล Monitor...</td></tr>';
-  try {
-    const data = await callApi('getMonitorData');
-    monitorRawData = data;
-    renderMonitorTable();
-  } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${err.message}</td></tr>`;
-  }
-}
-
-function renderMonitorTable() {
-  const searchUser = document.getElementById('monitorSearchUser').value.toLowerCase();
-  const searchCourse = document.getElementById('monitorSearchCourse').value.toLowerCase();
-  const alertFilter = document.getElementById('monitorAlertFilter').value;
-  const tbody = document.getElementById('monitorTableBody');
-  tbody.innerHTML = '';
-
-  const posMap = {};
-  monitorRawData.users.forEach(u => posMap[u.initialName] = u.position);
-
-  const filtered = monitorRawData.records.filter(r => {
-    const matchUser = r.initialName.toLowerCase().includes(searchUser);
-    const matchCourse = r.courseName.toLowerCase().includes(searchCourse);
-    let matchAlert = true;
-    const d = Number(r.daysLeft);
-    if (alertFilter === 'expired') matchAlert = (r.daysLeft !== '' && !isNaN(d) && d <= 0);
-    if (alertFilter === 'warning') matchAlert = (r.daysLeft !== '' && !isNaN(d) && d > 0 && d <= 90);
-    return matchUser && matchCourse && matchAlert;
-  });
-
-  if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">ไม่พบข้อมูลที่ตรงตามเงื่อนไข</td></tr>';
-    return;
-  }
-
-  filtered.forEach(r => {
-    tbody.innerHTML += `
-      <tr>
-        <td class="fw-bold">${r.initialName}</td>
-        <td>${posMap[r.initialName] || '-'}</td>
-        <td>${r.ato}</td>
-        <td>${r.type}</td>
-        <td>${r.courseName}</td>
-        <td class="text-center">${formatDaysLeft(r.daysLeft)}</td>
-      </tr>
-    `;
-  });
-}
-
 // ================= HELPERS =================
+function fillFilterDropdown(elementId, items, allLabel, selectedValue = 'ALL') {
+  const sel = document.getElementById(elementId);
+  if (!sel) return;
+  sel.innerHTML = `<option value="ALL">${allLabel}</option>`;
+  items.forEach(val => {
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = val;
+    sel.appendChild(opt);
+  });
+  sel.value = items.includes(selectedValue) ? selectedValue : 'ALL';
+}
+
+function escapeHtml(val) {
+  return String(val || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function escapeAttr(val) {
   return String(val || '')
     .replace(/&/g, '&amp;')
