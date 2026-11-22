@@ -1,4 +1,3 @@
-// ⚠️ นำ URL ของ Google Apps Script Web App ที่ Deploy แล้วมาใส่ที่นี่
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzPWv0y79-Xr8xMhIV-zwO5rTkKCRgDhSfQmMzBg_QmvqTzl3SkUCzHnxoQrpu0Q6VIVQ/exec';
 
 let currentUser = null;
