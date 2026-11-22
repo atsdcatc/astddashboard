@@ -86,28 +86,28 @@
 
     <div class="container my-4">
       <ul class="nav nav-pills mb-4 bg-white p-2 rounded shadow-sm" id="mainTabs">
-        <li class="nav-item">
-          <button type="button" class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabProfile" onclick="loadProfileData()">
+        <li class="nav-item user-only">
+          <button type="button" id="tabBtnProfile" class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabProfile" onclick="loadProfileData()">
             <i class="fa-solid fa-id-card me-1"></i> 1. Background
           </button>
         </li>
-        <li class="nav-item">
-          <button type="button" class="nav-link" data-bs-toggle="pill" data-bs-target="#tabTraining" onclick="loadUserTraining()">
+        <li class="nav-item user-only">
+          <button type="button" id="tabBtnTraining" class="nav-link" data-bs-toggle="pill" data-bs-target="#tabTraining" onclick="loadUserTraining()">
             <i class="fa-solid fa-graduation-cap me-1"></i> 2. My Training
           </button>
         </li>
-        <li class="nav-item">
-          <button type="button" class="nav-link" data-bs-toggle="pill" data-bs-target="#tabAdd" onclick="initAddForm()">
+        <li class="nav-item user-only">
+          <button type="button" id="tabBtnAdd" class="nav-link" data-bs-toggle="pill" data-bs-target="#tabAdd" onclick="initAddForm()">
             <i class="fa-solid fa-plus-circle me-1"></i> 3. Add Record
           </button>
         </li>
         <li class="nav-item admin-only hidden">
-          <button type="button" class="nav-link text-danger" data-bs-toggle="pill" data-bs-target="#tabAdminApprove" onclick="loadAdminRecords()">
+          <button type="button" id="tabBtnAdminApprove" class="nav-link text-danger" data-bs-toggle="pill" data-bs-target="#tabAdminApprove" onclick="loadAdminRecords()">
             <i class="fa-solid fa-check-double me-1"></i> 4. Approve (Admin)
           </button>
         </li>
         <li class="nav-item admin-only hidden">
-          <button type="button" class="nav-link text-danger" data-bs-toggle="pill" data-bs-target="#tabAdminMonitor" onclick="loadMonitor()">
+          <button type="button" id="tabBtnAdminMonitor" class="nav-link text-danger" data-bs-toggle="pill" data-bs-target="#tabAdminMonitor" onclick="loadMonitor()">
             <i class="fa-solid fa-chart-line me-1"></i> 5. Monitor (Admin)
           </button>
         </li>
@@ -115,7 +115,7 @@
 
       <div class="tab-content">
         <!-- TAB 1: BACKGROUND -->
-        <div class="tab-pane fade show active" id="tabProfile">
+        <div class="tab-pane fade show active user-only" id="tabProfile">
           <div class="card p-4">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 pb-3 border-bottom">
               <div class="d-flex align-items-center gap-2">
@@ -285,7 +285,7 @@
         </div>
 
         <!-- TAB 2: MY TRAINING -->
-        <div class="tab-pane fade" id="tabTraining">
+        <div class="tab-pane fade user-only" id="tabTraining">
           <div class="card p-4">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
               <div>
@@ -336,7 +336,7 @@
         </div>
 
         <!-- TAB 3: ADD TRAINING RECORD -->
-        <div class="tab-pane fade" id="tabAdd">
+        <div class="tab-pane fade user-only" id="tabAdd">
           <div class="card p-4 mx-auto" style="max-width: 780px;">
             <div class="d-flex align-items-center gap-2 mb-4 pb-3 border-bottom">
               <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white" style="width:38px;height:38px;">
@@ -421,7 +421,7 @@
         </div>
 
         <!-- TAB 4: ADMIN APPROVE -->
-        <div class="tab-pane fade" id="tabAdminApprove">
+        <div class="tab-pane fade admin-only hidden" id="tabAdminApprove">
           <div class="card p-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h5 class="fw-bold text-danger mb-0"><i class="fa-solid fa-user-shield me-2"></i>ตรวจสอบและอนุมัติรายการ (Admin)</h5>
@@ -457,7 +457,7 @@
         </div>
 
         <!-- TAB 5: ADMIN MONITOR -->
-        <div class="tab-pane fade" id="tabAdminMonitor">
+        <div class="tab-pane fade admin-only hidden" id="tabAdminMonitor">
           <div class="card p-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h5 class="fw-bold text-danger mb-0"><i class="fa-solid fa-desktop me-2"></i>ติดตามสถานะการอบรมบุคลากร (Monitor)</h5>
