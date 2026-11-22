@@ -107,6 +107,11 @@
           </button>
         </li>
         <li class="nav-item admin-only hidden">
+          <button type="button" id="tabBtnAdminDashboard" class="nav-link text-danger" data-bs-toggle="pill" data-bs-target="#tabAdminDashboard" onclick="loadAdminDashboard()">
+            <i class="fa-solid fa-chart-pie me-1"></i> Dashboard
+          </button>
+        </li>
+        <li class="nav-item admin-only hidden">
           <button type="button" id="tabBtnAdminMonitor" class="nav-link text-danger" data-bs-toggle="pill" data-bs-target="#tabAdminMonitor" onclick="loadMonitor()">
             <i class="fa-solid fa-chart-line me-1"></i> 5. Monitor (Admin)
           </button>
@@ -452,6 +457,44 @@
                 </thead>
                 <tbody id="adminRecordsBody"></tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB ADMIN DASHBOARD -->
+        <div class="tab-pane fade admin-only hidden" id="tabAdminDashboard">
+          <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h5 class="fw-bold text-danger mb-0"><i class="fa-solid fa-chart-pie me-2"></i>ภาพรวมระบบ (Admin Dashboard)</h5>
+              <button type="button" class="btn btn-sm btn-outline-danger" onclick="loadAdminDashboard()">
+                <i class="fa-solid fa-rotate me-1"></i> รีเฟรช
+              </button>
+            </div>
+            <div class="row g-3" id="adminDashboardCards">
+              <div class="col-md-3">
+                <div class="p-3 rounded border bg-light">
+                  <div class="small text-muted">บุคลากรทั้งหมด</div>
+                  <div class="fs-4 fw-bold text-primary" id="dashTotalUsers">-</div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="p-3 rounded border bg-light">
+                  <div class="small text-muted">รออนุมัติ (Waiting)</div>
+                  <div class="fs-4 fw-bold text-warning" id="dashWaitingCount">-</div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="p-3 rounded border bg-light">
+                  <div class="small text-muted">อนุมัติแล้ว (Approved)</div>
+                  <div class="fs-4 fw-bold text-success" id="dashApprovedCount">-</div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="p-3 rounded border bg-light">
+                  <div class="small text-muted">ใกล้หมดอายุ / หมดอายุ</div>
+                  <div class="fs-4 fw-bold text-danger" id="dashAlertCount">-</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
