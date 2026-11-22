@@ -15,7 +15,7 @@
     .nav-pills .nav-link.active { background-color: #0d6efd; font-weight: 600; }
     .card { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05); }
 
-    /* พื้นหลังการ์ดสีขาว + แถบเน้นด้านล่าง/ซ้ายและสีไอคอน */
+    /* พื้นหลังการ์ดสีขาว + แถบเน้นและสีไอคอน */
     .clean-section-card {
       background-color: #ffffff;
       border: 1px solid #e2e8f0;
@@ -161,6 +161,70 @@
       box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
       border: 1px solid #e2e8f0;
     }
+
+    /* Custom Days Left Dropdown with Color Symbols */
+    .daysleft-dropdown-wrap {
+      position: relative;
+    }
+    .daysleft-trigger-btn {
+      width: 100%;
+      background-color: #ffffff;
+      border: 1px solid #ced4da;
+      border-radius: 0.375rem;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+      color: #212529;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.35rem;
+      text-align: left;
+    }
+    .daysleft-trigger-btn:focus {
+      outline: none;
+      border-color: #86b7fe;
+      box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.2);
+    }
+    .daysleft-menu-pop {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      min-width: 175px;
+      background-color: #3f444a;
+      color: #ffffff;
+      border-radius: 10px;
+      padding: 0.35rem 0;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.28);
+      z-index: 1050;
+    }
+    .daysleft-option-item {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.42rem 0.8rem;
+      font-size: 0.875rem;
+      color: #f8fafc;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+    .daysleft-option-item:hover {
+      background-color: rgba(255, 255, 255, 0.12);
+    }
+    .daysleft-option-item.is-selected {
+      background-color: #3b82f6;
+      font-weight: 600;
+    }
+    .color-circle-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
     .dash-stat-card {
       border-radius: 12px;
       padding: 0.85rem 0.5rem;
@@ -289,7 +353,7 @@
             <input type="hidden" id="bgRow">
 
             <div class="row g-4">
-              <!-- คอลัมน์ซ้าย: Profile (ข้อมูลพื้นฐาน) & Education (ประวัติการศึกษา) -->
+              <!-- คอลัมน์ซ้าย: Profile & Education -->
               <div class="col-lg-6 d-flex flex-column gap-4">
                 <!-- 1. Profile -->
                 <div class="clean-section-card">
@@ -343,7 +407,7 @@
                   </div>
                 </div>
 
-                <!-- 3. Education (แสดงเฉพาะวุฒิที่มีข้อมูล + ปุ่มเพิ่มวุฒิการศึกษา) -->
+                <!-- 3. Education -->
                 <div class="clean-section-card">
                   <div class="d-flex justify-content-between align-items-center gap-2">
                     <div class="d-flex align-items-center gap-3">
@@ -365,7 +429,6 @@
                     <i class="fa-solid fa-plus me-1"></i> เพิ่มวุฒิการศึกษา
                   </button>
 
-                  <!-- ฟิลด์ซ่อนสำหรับเก็บค่าส่งบันทึก -->
                   <input type="hidden" id="eduBachYear">
                   <input type="hidden" id="eduBachDeg">
                   <input type="hidden" id="eduBachUni">
@@ -461,7 +524,7 @@
           </div>
         </div>
 
-        <!-- TAB 3: ADD TRAINING RECORD (Progressive Disclosure) -->
+        <!-- TAB 3: ADD TRAINING RECORD -->
         <div class="tab-pane fade user-only" id="tabAdd">
           <div class="card p-4 mx-auto" style="max-width: 680px;">
             <div class="d-flex justify-content-between align-items-center gap-2 mb-4 pb-2 border-bottom">
@@ -490,7 +553,6 @@
                 <select id="addSub1" class="form-select" required onchange="onSub1Change()"></select>
               </div>
 
-              <!-- ปุ่มเปิด/ปิดตัวเลือกเพิ่มเติม (Sub Type 2–3) -->
               <div>
                 <button type="button" id="btnToggleExtraSubs" class="btn btn-light border w-100 d-flex justify-content-between align-items-center py-2 px-3 rounded-3 fw-semibold text-secondary" onclick="toggleExtraSubsPanel()">
                   <span><i class="fa-solid fa-sliders me-2 text-primary"></i>ตัวเลือกเพิ่มเติม (Sub Type 2–3)</span>
@@ -678,15 +740,54 @@
             <div class="row g-2">
               <div class="col-6 col-md-2">
                 <label class="form-label small fw-bold mb-1">Days Left</label>
-                <select id="dashFilterDaysLeft" class="form-select form-select-sm" onchange="onDashboardBucketDropdownChange()">
-                  <option value="ALL">All</option>
-                  <option value="EXPIRE">Expire</option>
-                  <option value="WARNING">Warning</option>
-                  <option value="CAUTION">Caution</option>
-                  <option value="NORMAL">Normal</option>
-                  <option value="EXEMPTED">Exempted</option>
-                  <option value="PASS">Pass</option>
-                </select>
+                <div class="daysleft-dropdown-wrap" id="daysLeftCustomDropdown">
+                  <select id="dashFilterDaysLeft" class="d-none">
+                    <option value="ALL">All</option>
+                    <option value="EXPIRE">Expire</option>
+                    <option value="WARNING">Warning</option>
+                    <option value="CAUTION">Caution</option>
+                    <option value="NORMAL">Normal</option>
+                    <option value="EXEMPTED">Exempted</option>
+                    <option value="PASS">Pass</option>
+                  </select>
+                  <button type="button" id="daysLeftTriggerBtn" class="daysleft-trigger-btn" onclick="toggleDaysLeftMenu(event)">
+                    <span id="daysLeftSelectedLabel" class="d-flex align-items-center gap-2 text-truncate">
+                      <span class="color-circle-dot" style="background-color:#3b82f6;"></span>
+                      <span>All</span>
+                    </span>
+                    <i class="fa-solid fa-chevron-down small text-secondary"></i>
+                  </button>
+                  <div id="daysLeftMenuPop" class="daysleft-menu-pop hidden">
+                    <button type="button" class="daysleft-option-item" data-value="EXPIRE" onclick="pickDaysLeftOption('EXPIRE', event)">
+                      <span class="color-circle-dot" style="background-color:#ef4444;"></span>
+                      <span>Expire</span>
+                    </button>
+                    <button type="button" class="daysleft-option-item" data-value="WARNING" onclick="pickDaysLeftOption('WARNING', event)">
+                      <span class="color-circle-dot" style="background-color:#f97316;"></span>
+                      <span>Warning</span>
+                    </button>
+                    <button type="button" class="daysleft-option-item" data-value="CAUTION" onclick="pickDaysLeftOption('CAUTION', event)">
+                      <span class="color-circle-dot" style="background-color:#facc15;"></span>
+                      <span>Caution</span>
+                    </button>
+                    <button type="button" class="daysleft-option-item" data-value="NORMAL" onclick="pickDaysLeftOption('NORMAL', event)">
+                      <span class="color-circle-dot" style="background-color:#22c55e;"></span>
+                      <span>Normal</span>
+                    </button>
+                    <button type="button" class="daysleft-option-item" data-value="EXEMPTED" onclick="pickDaysLeftOption('EXEMPTED', event)">
+                      <span class="color-circle-dot" style="background-color:#e2e8f0;"></span>
+                      <span>Exempted</span>
+                    </button>
+                    <button type="button" class="daysleft-option-item" data-value="PASS" onclick="pickDaysLeftOption('PASS', event)">
+                      <i class="fa-solid fa-check text-success" style="width:12px;"></i>
+                      <span>Pass</span>
+                    </button>
+                    <button type="button" class="daysleft-option-item is-selected" data-value="ALL" onclick="pickDaysLeftOption('ALL', event)">
+                      <span class="color-circle-dot" style="background-color:#3b82f6;"></span>
+                      <span>All</span>
+                    </button>
+                  </div>
+                </div>
               </div>
               <div class="col-6 col-md-2">
                 <label class="form-label small fw-bold mb-1">Initial Name</label>
@@ -786,7 +887,7 @@
     </div>
   </div>
 
-  <!-- MODAL EXPERIENCE (เพิ่ม / แก้ไขประสบการณ์ทำงาน) -->
+  <!-- MODAL EXPERIENCE -->
   <div class="modal fade" id="expModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -822,7 +923,7 @@
     </div>
   </div>
 
-  <!-- MODAL EDUCATION (เพิ่ม / แก้ไขวุฒิการศึกษา) -->
+  <!-- MODAL EDUCATION -->
   <div class="modal fade" id="eduModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
