@@ -110,6 +110,110 @@
       text-decoration: underline;
     }
 
+    /* ================= MY TRAINING NEW UI ================= */
+    .mt-summary-box {
+      border-radius: 14px;
+      padding: 0.9rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 86px;
+    }
+    .mt-sum-total   { background-color: #eff6ff; color: #2563eb; }
+    .mt-sum-approve { background-color: #f0fdf4; color: #16a34a; }
+    .mt-sum-waiting { background-color: #fefce8; color: #ca8a04; }
+    .mt-sum-expiring{ background-color: #fff7ed; color: #ea580c; }
+    .mt-sum-val     { font-size: 1.55rem; font-weight: 700; line-height: 1.1; margin-top: 0.35rem; }
+
+    .mt-cat-card {
+      width: 100%;
+      background-color: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.65rem;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+    .mt-cat-card:hover {
+      background-color: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    .mt-cat-card.active {
+      background-color: #eff6ff;
+      border-color: #3b82f6;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
+    }
+
+    .mt-search-pill {
+      border-radius: 999px;
+      padding: 0.55rem 1.15rem;
+      border: 1px solid #cbd5e1;
+      background-color: #ffffff;
+    }
+    .mt-filter-pill {
+      border-radius: 999px;
+      padding: 0.45rem 1rem;
+      border: 1px solid #cbd5e1;
+      background-color: #ffffff;
+      font-weight: 500;
+    }
+    .mt-view-toggle {
+      display: inline-flex;
+      background-color: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 3px;
+    }
+    .mt-view-btn {
+      border: none;
+      background: transparent;
+      border-radius: 999px;
+      padding: 0.32rem 0.95rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+    .mt-view-btn.active {
+      background-color: #ffffff;
+      color: #0f172a;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+    }
+
+    .mt-record-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 1.15rem 1.25rem;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .mt-record-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+    }
+
+    /* ป้ายสีสถานะวันหมดอายุ (รูปแนบที่ 3) */
+    .day-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.28rem 0.72rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .day-pill-valid    { background-color: #dcfce7; color: #15803d; }
+    .day-pill-expiring { background-color: #ffedd5; color: #c2410c; }
+    .day-pill-expired  { background-color: #fee2e2; color: #b91c1c; }
+    .day-pill-none     { background-color: #f1f5f9; color: #475569; }
+
+    .status-pill-approve { background-color: #dcfce7; color: #15803d; padding: 0.28rem 0.75rem; border-radius: 999px; font-size: 0.82rem; font-weight: 600; }
+    .status-pill-waiting { background-color: #fef9c3; color: #a16207; padding: 0.28rem 0.75rem; border-radius: 999px; font-size: 0.82rem; font-weight: 600; }
+    .status-pill-reject  { background-color: #fee2e2; color: #b91c1c; padding: 0.28rem 0.75rem; border-radius: 999px; font-size: 0.82rem; font-weight: 600; }
+
     /* Training Form Progressive Disclosure */
     .form-field-box {
       background-color: #ffffff;
@@ -163,10 +267,7 @@
       border: 1px solid #e2e8f0;
     }
 
-    /* Custom Days Left Dropdown with Color Symbols */
-    .daysleft-dropdown-wrap {
-      position: relative;
-    }
+    .daysleft-dropdown-wrap { position: relative; }
     .daysleft-trigger-btn {
       width: 100%;
       background-color: #ffffff;
@@ -180,11 +281,6 @@
       justify-content: space-between;
       gap: 0.35rem;
       text-align: left;
-    }
-    .daysleft-trigger-btn:focus {
-      outline: none;
-      border-color: #86b7fe;
-      box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.2);
     }
     .daysleft-menu-pop {
       position: absolute;
@@ -211,20 +307,9 @@
       width: 100%;
       text-align: left;
     }
-    .daysleft-option-item:hover {
-      background-color: rgba(255, 255, 255, 0.12);
-    }
-    .daysleft-option-item.is-selected {
-      background-color: #3b82f6;
-      font-weight: 600;
-    }
-    .color-circle-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      display: inline-block;
-      flex-shrink: 0;
-    }
+    .daysleft-option-item:hover { background-color: rgba(255, 255, 255, 0.12); }
+    .daysleft-option-item.is-selected { background-color: #3b82f6; font-weight: 600; }
+    .color-circle-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 
     .dash-stat-card {
       border-radius: 12px;
@@ -354,7 +439,6 @@
             <input type="hidden" id="bgRow">
 
             <div class="row g-4">
-              <!-- คอลัมน์ซ้าย: Profile & Education -->
               <div class="col-lg-6 d-flex flex-column gap-4">
                 <!-- 1. Profile -->
                 <div class="clean-section-card">
@@ -447,7 +531,7 @@
                 </div>
               </div>
 
-              <!-- คอลัมน์ขวา: Experience (Timeline) -->
+              <!-- Experience Timeline -->
               <div class="col-lg-6">
                 <div class="clean-section-card h-100">
                   <div class="d-flex justify-content-between align-items-start gap-2">
@@ -474,49 +558,179 @@
           </div>
         </div>
 
-        <!-- TAB 2: MY TRAINING -->
+        <!-- TAB 2: MY TRAINING (ปรับโฉมตามรูปแนบ 1, 2, 3) -->
         <div class="tab-pane fade user-only" id="tabTraining">
           <div class="card p-4">
+            <!-- Header + ปุ่มเพิ่มรายการ -->
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
               <div>
-                <h5 class="fw-bold text-primary mb-1"><i class="fa-solid fa-list-check me-2"></i>ประวัติการฝึกอบรมและใบอนุญาต</h5>
-                <div id="trainingSummary" class="small text-muted">กำลังโหลดสรุปรายการ...</div>
+                <h4 class="fw-bold text-dark mb-0">My Training</h4>
+                <small class="text-muted">ประวัติการฝึกอบรมและใบอนุญาต</small>
               </div>
-              <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadUserTraining()">
-                <i class="fa-solid fa-rotate me-1"></i> รีเฟรช
-              </button>
-            </div>
-
-            <div class="row g-2 mb-3 bg-light p-2 rounded border">
-              <div class="col-md-5">
-                <input type="text" id="trainingSearchInput" class="form-control form-control-sm" autocomplete="off" placeholder="ค้นหาชื่อหลักสูตร, ใบอนุญาต หรือ Role..." oninput="renderUserTrainingTable()">
-              </div>
-              <div class="col-md-4">
-                <select id="trainingTypeFilter" class="form-select form-select-sm" onchange="renderUserTrainingTable()">
-                  <option value="all">ทุกประเภท (All Types)</option>
-                </select>
-              </div>
-              <div class="col-md-3">
-                <select id="trainingStatusFilter" class="form-select form-select-sm" onchange="renderUserTrainingTable()">
-                  <option value="all">ทุกสถานะ (All Status)</option>
-                  <option value="approve">Approved</option>
-                  <option value="waiting approve">Waiting Approve</option>
-                  <option value="reject">Rejected</option>
-                </select>
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="loadUserTraining()" title="รีเฟรชข้อมูล">
+                  <i class="fa-solid fa-rotate"></i>
+                </button>
+                <button type="button" class="btn btn-dark rounded-pill px-3 py-2 fw-semibold" onclick="goToAddTrainingTab()">
+                  <i class="fa-solid fa-plus me-1"></i> เพิ่มรายการ
+                </button>
               </div>
             </div>
 
-            <div class="table-responsive">
-              <table class="table table-striped table-hover align-middle mb-0">
+            <!-- การ์ดสรุป 4 กล่อง -->
+            <div class="row g-3 mb-4">
+              <div class="col-6 col-md-3">
+                <div class="mt-summary-box mt-sum-total">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span class="small fw-semibold">รายการทั้งหมด</span>
+                  </div>
+                  <div class="mt-sum-val" id="mtStatTotal">0</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="mt-summary-box mt-sum-approve">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <i class="fa-regular fa-circle-check"></i>
+                    <span class="small fw-semibold">อนุมัติแล้ว</span>
+                  </div>
+                  <div class="mt-sum-val" id="mtStatApproved">0</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="mt-summary-box mt-sum-waiting">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <i class="fa-regular fa-clock"></i>
+                    <span class="small fw-semibold">รออนุมัติ</span>
+                  </div>
+                  <div class="mt-sum-val" id="mtStatWaiting">0</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="mt-summary-box mt-sum-expiring">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <i class="fa-regular fa-calendar-xmark"></i>
+                    <span class="small fw-semibold">ใกล้หมดอายุ</span>
+                  </div>
+                  <div class="mt-sum-val" id="mtStatExpiring">-</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- หมวดหมู่การฝึกอบรม (6 การ์ด) -->
+            <div class="mb-3">
+              <div class="fw-bold text-dark mb-2">หมวดหมู่การฝึกอบรม</div>
+              <div class="row g-2" id="mtCategoryGrid">
+                <div class="col-md-6">
+                  <button type="button" class="mt-cat-card active" data-cat="all" onclick="selectTrainingCategory('all')">
+                    <div class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-border-all text-primary fs-5"></i>
+                      <div>
+                        <div class="fw-bold text-dark">ทั้งหมด</div>
+                        <div class="small text-muted" id="catCountAll">0 รายการ</div>
+                      </div>
+                    </div>
+                    <i class="fa-regular fa-circle-check text-primary"></i>
+                  </button>
+                </div>
+                <div class="col-md-6">
+                  <button type="button" class="mt-cat-card" data-cat="initial training" onclick="selectTrainingCategory('initial training')">
+                    <div class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-graduation-cap text-primary fs-5"></i>
+                      <div>
+                        <div class="fw-bold text-dark">Initial Training</div>
+                        <div class="small text-muted" id="catCountInitial">การฝึกอบรมเริ่มต้น (0)</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+                <div class="col-md-6">
+                  <button type="button" class="mt-cat-card" data-cat="recurrent training" onclick="selectTrainingCategory('recurrent training')">
+                    <div class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-arrows-rotate text-success fs-5"></i>
+                      <div>
+                        <div class="fw-bold text-dark">Recurrent Training</div>
+                        <div class="small text-muted" id="catCountRecurrent">การฝึกอบรมทบทวนตามรอบ (0)</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+                <div class="col-md-6">
+                  <button type="button" class="mt-cat-card" data-cat="optional training" onclick="selectTrainingCategory('optional training')">
+                    <div class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-book-open fs-5" style="color:#7c3aed;"></i>
+                      <div>
+                        <div class="fw-bold text-dark">Optional Training</div>
+                        <div class="small text-muted" id="catCountOptional">การฝึกอบรมเพิ่มเติม (0)</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+                <div class="col-md-6">
+                  <button type="button" class="mt-cat-card" data-cat="continuing training" onclick="selectTrainingCategory('continuing training')">
+                    <div class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-award text-warning fs-5"></i>
+                      <div>
+                        <div class="fw-bold text-dark">Continuing Training</div>
+                        <div class="small text-muted" id="catCountContinuing">การพัฒนาความรู้ต่อเนื่อง (0)</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+                <div class="col-md-6">
+                  <button type="button" class="mt-cat-card" data-cat="personnel licensing" onclick="selectTrainingCategory('personnel licensing')">
+                    <div class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-id-badge text-info fs-5"></i>
+                      <div>
+                        <div class="fw-bold text-dark">Personnel Licensing</div>
+                        <div class="small text-muted" id="catCountLicensing">ใบอนุญาตและคุณสมบัติบุคลากร (0)</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ช่องค้นหา + ตัวกรองสถานะ / Role + ปุ่มสลับ Cards / Table -->
+            <div class="d-flex flex-column gap-2 mb-3">
+              <input type="text" id="trainingSearchInput" class="form-control mt-search-pill" autocomplete="off" placeholder="ค้นหาชื่อหลักสูตร / ใบอนุญาต / Role..." oninput="renderUserTrainingView()">
+
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="d-flex flex-wrap gap-2">
+                  <select id="trainingStatusFilter" class="form-select form-select-sm mt-filter-pill w-auto" onchange="renderUserTrainingView()">
+                    <option value="all">ทุกสถานะ</option>
+                    <option value="approve">Approved</option>
+                    <option value="waiting approve">Waiting Approve</option>
+                    <option value="reject">Rejected</option>
+                  </select>
+
+                  <select id="trainingSubFilter" class="form-select form-select-sm mt-filter-pill w-auto" onchange="renderUserTrainingView()">
+                    <option value="all">ทุกหลักสูตร / Role</option>
+                  </select>
+                </div>
+
+                <div class="mt-view-toggle">
+                  <button type="button" id="btnViewCards" class="mt-view-btn active" onclick="switchTrainingViewMode('cards')">Cards</button>
+                  <button type="button" id="btnViewTable" class="mt-view-btn" onclick="switchTrainingViewMode('table')">Table</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- มุมมอง CARDS -->
+            <div id="userTrainingCardsContainer" class="d-flex flex-column gap-3"></div>
+
+            <!-- มุมมอง TABLE -->
+            <div id="userTrainingTableContainer" class="table-responsive hidden">
+              <table class="table table-hover align-middle mb-0 border">
                 <thead class="table-light border-bottom">
                   <tr class="small text-secondary">
-                    <th class="py-2">หมวด / ประเภท</th>
+                    <th class="py-2">หมวดหมู่</th>
                     <th class="py-2">หลักสูตร / ใบอนุญาต / Role</th>
-                    <th class="py-2 text-nowrap">Active Date</th>
-                    <th class="py-2 text-nowrap">Expire Date</th>
-                    <th class="py-2 text-center text-nowrap">Days Left</th>
+                    <th class="py-2 text-nowrap">วันที่ฝึกอบรม / ออกใบอนุญาต</th>
+                    <th class="py-2 text-nowrap">วันหมดอายุ</th>
+                    <th class="py-2 text-center text-nowrap">สถานะวันหมดอายุ</th>
                     <th class="py-2 text-center">Status</th>
-                    <th class="py-2 text-center">File</th>
+                    <th class="py-2 text-center">รายละเอียด</th>
                   </tr>
                 </thead>
                 <tbody id="userTrainingBody"></tbody>
@@ -884,6 +1098,20 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TRAINING DETAIL (ดูรายละเอียดหลักสูตร) -->
+  <div class="modal fade" id="trainingDetailModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title fw-bold" id="tdModalTitle">รายละเอียดการฝึกอบรม</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="tdModalBody"></div>
+        <div class="modal-footer justify-content-between" id="tdModalFooter"></div>
       </div>
     </div>
   </div>
