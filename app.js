@@ -4,6 +4,7 @@ const MAX_EXPERIENCE = 6;
 let currentUser = null;
 let dbOptions = null;
 let userTrainingRecords = [];
+let trainingViewMode = 'card';
 let allAdminRecords = [];
 let monitorRawData = { users: [], records: [], db: {} };
 let dashboardSortAsc = true;
@@ -290,7 +291,6 @@ function deleteExpFromModal() {
   bootstrap.Modal.getInstance(document.getElementById('expModal'))?.hide();
 }
 
-// แสดงเฉพาะระดับการศึกษาที่มีข้อมูลจริง (วุฒิ/สาขา, สถาบัน หรือปีที่จบ)[cite: 15]
 function hasEduContent(eduObj) {
   if (!eduObj) return false;
   const deg = String(eduObj.deg || '').trim();
@@ -623,11 +623,64 @@ async function exportPDF() {
   }
 }
 
-// ================= 3. MY TRAINING =================
+// ================= 3. MY TRAINING (CATEGORY + CARD & TABLE + COLOR BY DAYS) =================
+function getUserDaysCategory(rec) {
+  const status = String(rec.statusStr || '').trim().toLowerCase();
+  if (status === 'exempted' || status === 'exempt') {
+    return { code: 'exempted', text: '⚪ Exempted', bg: '#6c757d', fg: '#ffffff' };
+  }
+
+  const dVal = rec.daysLeft;
+  if (dVal === '' || dVal === null || dVal === undefined) {
+    return { code: 'pass', text: '✅ Pass', bg: '#20c997', fg: '#1e293b' };
+  }
+
+  const n = Number(dVal);
+  if (isNaN(n)) {
+    return { code: 'pass', text: `✅ ${escapeHtml(dVal)}`, bg: '#20c997', fg: '#1e293b' };
+  }
+  if (n <= 0) {
+    return { code: 'expire', text: `หมดอายุ (${n} วัน)`, bg: '#dc3545', fg: '#ffffff' };
+  }
+  if (n <= 30) {
+    return { code: 'warning', text: `เหลือ ${n} วัน`, bg: '#fd7e14', fg: '#ffffff' };
+  }
+  if (n <= 90) {
+    return { code: 'caution', text: `เหลือ ${n} วัน`, bg: '#ffc107', fg: '#1e293b' };
+  }
+  return { code: 'normal', text: `เหลือ ${n} วัน`, bg: '#198754', fg: '#ffffff' };
+}
+
+function setTrainingViewMode(mode) {
+  trainingViewMode = mode === 'table' ? 'table' : 'card';
+  const cardBtn = document.getElementById('btnViewCard');
+  const tableBtn = document.getElementById('btnViewTable');
+  const cardView = document.getElementById('trainingCardView');
+  const tableView = document.getElementById('trainingTableView');
+
+  if (cardBtn) {
+    cardBtn.classList.toggle('btn-primary', trainingViewMode === 'card');
+    cardBtn.classList.toggle('btn-outline-primary', trainingViewMode !== 'card');
+    cardBtn.classList.toggle('active', trainingViewMode === 'card');
+  }
+  if (tableBtn) {
+    tableBtn.classList.toggle('btn-primary', trainingViewMode === 'table');
+    tableBtn.classList.toggle('btn-outline-primary', trainingViewMode !== 'table');
+    tableBtn.classList.toggle('active', trainingViewMode === 'table');
+  }
+  if (cardView) cardView.classList.toggle('hidden', trainingViewMode !== 'card');
+  if (tableView) tableView.classList.toggle('hidden', trainingViewMode !== 'table');
+
+  renderUserTraining();
+}
+
 async function loadUserTraining() {
   const tbody = document.getElementById('userTrainingBody');
+  const cardView = document.getElementById('trainingCardView');
   const summary = document.getElementById('trainingSummary');
+
   if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">กำลังโหลดข้อมูล...</td></tr>';
+  if (cardView) cardView.innerHTML = '<div class="text-center py-4 text-muted">กำลังโหลดข้อมูล...</div>';
   if (summary) summary.innerText = 'กำลังโหลดสรุปรายการ...';
 
   try {
@@ -658,9 +711,10 @@ async function loadUserTraining() {
     }
 
     updateTrainingSummary();
-    renderUserTrainingTable();
+    renderUserTraining();
   } catch (err) {
     if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">${err.message}</td></tr>`;
+    if (cardView) cardView.innerHTML = `<div class="text-center py-4 text-danger">${err.message}</div>`;
     if (summary) summary.innerText = 'ไม่สามารถโหลดข้อมูลได้';
   }
 }
@@ -674,15 +728,12 @@ function updateTrainingSummary() {
   summary.innerHTML = `ทั้งหมด <strong>${total}</strong> รายการ • <span class="text-success">Approved ${approved}</span> • <span class="text-warning text-dark">Waiting ${waiting}</span>`;
 }
 
-function renderUserTrainingTable() {
-  const tbody = document.getElementById('userTrainingBody');
-  if (!tbody) return;
-
+function getFilteredUserTraining() {
   const keyword = (document.getElementById('trainingSearchInput')?.value || '').trim().toLowerCase();
   const typeFilter = (document.getElementById('trainingTypeFilter')?.value || 'all').trim().toLowerCase();
   const statusFilter = (document.getElementById('trainingStatusFilter')?.value || 'all').trim().toLowerCase();
 
-  const filtered = userTrainingRecords.filter(r => {
+  return userTrainingRecords.filter(r => {
     const rowType = String(r.type || '').trim().toLowerCase();
     const matchType = typeFilter === 'all' || rowType === typeFilter;
     const matchStatus = statusFilter === 'all' || String(r.statusStr || '').trim().toLowerCase() === statusFilter;
@@ -690,6 +741,86 @@ function renderUserTrainingTable() {
     const matchKeyword = !keyword || searchable.includes(keyword);
     return matchType && matchStatus && matchKeyword;
   });
+}
+
+function renderUserTraining() {
+  const filtered = getFilteredUserTraining();
+  if (trainingViewMode === 'table') {
+    renderUserTrainingTable(filtered);
+  } else {
+    renderUserTrainingCards(filtered);
+  }
+}
+
+function renderUserTrainingCards(filtered) {
+  const container = document.getElementById('trainingCardView');
+  if (!container) return;
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="text-center py-4 text-muted bg-light rounded border">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</div>';
+    return;
+  }
+
+  // จัดกลุ่มตามหมวดหมู่ (Type)
+  const grouped = new Map();
+  filtered.forEach(r => {
+    const cat = String(r.type || '').trim() || 'อื่นๆ';
+    if (!grouped.has(cat)) grouped.set(cat, []);
+    grouped.get(cat).push(r);
+  });
+
+  container.innerHTML = [...grouped.entries()].map(([categoryName, items]) => {
+    const cardsHtml = items.map(r => {
+      const daysInfo = getUserDaysCategory(r);
+      const mainTitle = r.sub2 || r.sub1 || '-';
+      const detailLine = [r.ato, r.sub1 && r.sub2 ? r.sub1 : '', r.sub3 ? `Role: ${r.sub3}` : '']
+        .filter(Boolean)
+        .join(' • ');
+      const fileBtn = r.link
+        ? `<a href="${escapeAttr(r.link)}" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2"><i class="fa-solid fa-file-lines me-1"></i>เปิดไฟล์</a>`
+        : '<span class="text-muted small">ไม่มีไฟล์แนบ</span>';
+
+      return `
+        <div class="col-md-6 col-xl-4">
+          <div class="training-item-card days-${daysInfo.code}">
+            <div>
+              <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                <span class="days-badge-pill" style="background-color:${daysInfo.bg};color:${daysInfo.fg};">${daysInfo.text}</span>
+                ${getStatusBadge(r.statusStr)}
+              </div>
+              <div class="fw-bold text-dark fs-6 mb-1">${escapeHtml(mainTitle)}</div>
+              ${detailLine ? `<div class="small text-secondary mb-2">${escapeHtml(detailLine)}</div>` : ''}
+            </div>
+            <div class="pt-2 mt-2 border-top d-flex justify-content-between align-items-end gap-2">
+              <div class="small text-muted">
+                <div>Active: <strong>${escapeHtml(formatDateDisplay(r.active))}</strong></div>
+                <div>Expire: <strong>${escapeHtml(formatDateDisplay(r.expire))}</strong></div>
+              </div>
+              <div>${fileBtn}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="category-group-box">
+        <div class="category-header-line">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary-subtle text-primary px-2 py-1"><i class="fa-solid fa-folder-open"></i></span>
+            <h6 class="fw-bold text-dark mb-0">${escapeHtml(categoryName)}</h6>
+          </div>
+          <span class="badge rounded-pill bg-light text-dark border px-3 py-1">${items.length} รายการ</span>
+        </div>
+        <div class="row g-3">${cardsHtml}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderUserTrainingTable(filtered) {
+  const tbody = document.getElementById('userTrainingBody');
+  if (!tbody) return;
 
   tbody.innerHTML = '';
   if (filtered.length === 0) {
@@ -703,19 +834,19 @@ function renderUserTrainingTable() {
     const categoryMeta = [r.ato, r.type].filter(Boolean).join(' • ');
     const badge = getStatusBadge(r.statusStr);
     const fileBtn = r.link
-      ? `<a href="${r.link}" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2 text-nowrap"><i class="fa-solid fa-file-lines me-1"></i>เปิดไฟล์</a>`
+      ? `<a href="${escapeAttr(r.link)}" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2 text-nowrap"><i class="fa-solid fa-file-lines me-1"></i>เปิดไฟล์</a>`
       : '<span class="text-muted small">-</span>';
 
     tbody.innerHTML += `
       <tr>
-        <td class="py-2 small text-secondary">${categoryMeta || '-'}</td>
+        <td class="py-2 small text-secondary">${escapeHtml(categoryMeta || '-')}</td>
         <td class="py-2">
-          <div class="fw-semibold text-dark">${mainTitle}</div>
-          ${subMeta ? `<div class="small text-muted">${subMeta}</div>` : ''}
+          <div class="fw-semibold text-dark">${escapeHtml(mainTitle)}</div>
+          ${subMeta ? `<div class="small text-muted">${escapeHtml(subMeta)}</div>` : ''}
         </td>
-        <td class="py-2 text-nowrap small">${formatDateDisplay(r.active)}</td>
-        <td class="py-2 text-nowrap small">${formatDateDisplay(r.expire)}</td>
-        <td class="py-2 text-center text-nowrap">${formatDaysLeft(r.daysLeft)}</td>
+        <td class="py-2 text-nowrap small">${escapeHtml(formatDateDisplay(r.active))}</td>
+        <td class="py-2 text-nowrap small">${escapeHtml(formatDateDisplay(r.expire))}</td>
+        <td class="py-2 text-center text-nowrap">${formatDaysLeft(r)}</td>
         <td class="py-2 text-center text-nowrap">${badge}</td>
         <td class="py-2 text-center">${fileBtn}</td>
       </tr>
@@ -1250,7 +1381,7 @@ function renderDashboardTable() {
 
   tbody.innerHTML = finalRows.map(r => {
     const evidence = r.link
-      ? `<a href="${r.link}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2"><i class="fa-solid fa-file-lines me-1"></i>View</a>`
+      ? `<a href="${escapeAttr(r.link)}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2"><i class="fa-solid fa-file-lines me-1"></i>View</a>`
       : '-';
     return `
       <tr>
@@ -1272,8 +1403,8 @@ function renderDashboardTable() {
 
 function formatDashboardDaysLeft(rec) {
   const bucket = getRecordBucket(rec);
-  if (bucket === 'EXEMPTED') return '<span class="badge bg-secondary">Exempted</span>';
-  if (bucket === 'PASS') return '<span class="badge" style="background:#20c997;color:#1e293b;">Pass</span>';
+  if (bucket === 'EXEMPTED') return '<span class="badge bg-secondary">⚪ Exempted</span>';
+  if (bucket === 'PASS') return '<span class="badge" style="background:#20c997;color:#1e293b;">✅ Pass</span>';
   const n = Number(rec.daysLeft);
   if (bucket === 'EXPIRE') return `<span class="badge bg-danger">Expire (${n})</span>`;
   if (bucket === 'WARNING') return `<span class="badge" style="background:#fd7e14;">${n} วัน</span>`;
@@ -1307,13 +1438,13 @@ function renderAdminTable() {
 
   filtered.forEach(r => {
     const courseFull = [r.sub1, r.sub2, r.sub3].filter(Boolean).join(' | ');
-    const fileLink = r.link ? `<a href="${r.link}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2">ดูไฟล์</a>` : '-';
+    const fileLink = r.link ? `<a href="${escapeAttr(r.link)}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2">ดูไฟล์</a>` : '-';
     tbody.innerHTML += `
       <tr>
-        <td class="fw-bold">${r.initialName}</td>
-        <td>${r.ato}</td>
-        <td>${r.type}</td>
-        <td>${courseFull}</td>
+        <td class="fw-bold">${escapeHtml(r.initialName)}</td>
+        <td>${escapeHtml(r.ato)}</td>
+        <td>${escapeHtml(r.type)}</td>
+        <td>${escapeHtml(courseFull)}</td>
         <td>${formatDateDisplay(r.active)}</td>
         <td>${formatDateDisplay(r.expire)}</td>
         <td class="text-center">${fileLink}</td>
@@ -1391,13 +1522,12 @@ function formatDateDisplay(val) {
   return val;
 }
 
-function formatDaysLeft(days) {
-  if (days === '' || days === null || days === undefined) return '-';
-  const n = Number(days);
-  if (isNaN(n)) return days;
-  if (n <= 0) return `<span class="badge bg-danger">หมดอายุ (${n})</span>`;
-  if (n <= 90) return `<span class="badge bg-warning text-dark">เหลือ ${n} วัน</span>`;
-  return `<span class="badge bg-success">เหลือ ${n} วัน</span>`;
+function formatDaysLeft(recOrDays) {
+  const rec = (typeof recOrDays === 'object' && recOrDays !== null)
+    ? recOrDays
+    : { daysLeft: recOrDays, statusStr: '' };
+  const info = getUserDaysCategory(rec);
+  return `<span class="days-badge-pill" style="background-color:${info.bg};color:${info.fg};">${info.text}</span>`;
 }
 
 function getStatusBadge(status) {
