@@ -181,7 +181,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
   const btn = document.getElementById('btnLogin');
 
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังตรวจสอบ...';
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...';
 
   try {
     const res = await callApi('loginUser', { username: user, password: pass });
@@ -195,7 +195,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     Swal.fire('Error', err.message, 'error');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket me-1"></i> เข้าสู่ระบบ';
+    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket me-1"></i> LOG IN';
   }
 });
 
@@ -282,7 +282,7 @@ function renderExperienceTimeline() {
   if (addBtn) addBtn.disabled = experienceItems.length >= MAX_EXPERIENCE;
 
   if (experienceItems.length === 0) {
-    container.innerHTML = '<div class="text-muted small py-2">ยังไม่มีข้อมูลประสบการณ์ทำงาน กด "+ เพิ่มใหม่" เพื่อเพิ่มรายการ</div>';
+    container.innerHTML = '<div class="text-muted small py-2">ยังไม่มีข้อมูลประสบการณ์ทำงาน กด "+ เพิ่ม" เพื่อเพิ่มรายการ</div>';
     return;
   }
 
@@ -411,7 +411,7 @@ function renderEducationSection() {
   container.innerHTML = levels.map(item => {
     const d = educationStore[item.key];
     const docLink = d.file
-      ? `<a href="${escapeAttr(d.file)}" target="_blank" class="doc-available-tag" onclick="event.stopPropagation();"><i class="fa-solid fa-file-circle-check me-1"></i>มีเอกสาร</a>`
+      ? `<a href="${escapeAttr(d.file)}" target="_blank" class="doc-available-tag" onclick="event.stopPropagation();"><i class="fa-solid fa-file-circle-check me-1"></i>เอกสาร</a>`
       : '';
 
     return `
@@ -938,7 +938,7 @@ function openTrainingDetailModal(index) {
   document.getElementById('detailModalBody').innerHTML = `
     <div class="mb-2"><span class="text-muted small">หมวดหมู่ / รายละเอียด:</span><div class="fw-semibold">${escapeHtml(subPath || '-')}</div></div>
     <div class="row g-2 mb-2 small">
-      <div class="col-6"><span class="text-muted">หน่วยงาน (ATO):</span><div class="fw-semibold">${escapeHtml(rec.ato || '-')}</div></div>
+      <div class="col-6"><span class="text-muted">ATO:</span><div class="fw-semibold">${escapeHtml(rec.ato || '-')}</div></div>
       <div class="col-6"><span class="text-muted">สถานะ:</span><div>${getSoftStatusBadge(rec.statusStr)}</div></div>
       <div class="col-6"><span class="text-muted">วันที่ฝึกอบรม / ออกใบอนุญาต:</span><div class="fw-semibold">${escapeHtml(formatDateDisplay(rec.active))}</div></div>
       <div class="col-6"><span class="text-muted">วันหมดอายุ:</span><div class="fw-semibold">${escapeHtml(formatDateDisplay(rec.expire))}</div></div>
@@ -997,8 +997,8 @@ function renderUserTrainingCards(filtered) {
 
         <div class="d-flex justify-content-between align-items-center gap-2">
           ${getSoftRemainingBadge(r)}
-          <button type="button" class="detail-outline-btn" onclick="openTrainingDetailModal(${idx})">
-            <i class="fa-regular fa-file-lines me-1"></i> ดูรายละเอียด
+          <button type="button" class="detail-outline-btn" title="รายละเอียด" aria-label="รายละเอียด" onclick="openTrainingDetailModal(${idx})">
+            <i class="fa-regular fa-file-lines"></i>
           </button>
         </div>
       </div>
@@ -1032,8 +1032,8 @@ function renderUserTrainingTable(filtered) {
         <td class="py-2 text-center text-nowrap">${getSoftRemainingBadge(r)}</td>
         <td class="py-2 text-center text-nowrap">${getSoftStatusBadge(r.statusStr)}</td>
         <td class="py-2 text-end text-nowrap">
-          <button type="button" class="detail-outline-btn" onclick="openTrainingDetailModal(${idx})">
-            <i class="fa-regular fa-file-lines me-1"></i> ดูรายละเอียด
+          <button type="button" class="detail-outline-btn" title="รายละเอียด" aria-label="รายละเอียด" onclick="openTrainingDetailModal(${idx})">
+            <i class="fa-regular fa-file-lines"></i>
           </button>
         </td>
       </tr>
