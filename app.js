@@ -9,6 +9,7 @@ let selectedTrainingCategory = 'ALL';
 let allAdminRecords = [];
 let monitorRawData = { users: [], records: [], db: {} };
 let monitorScopeFilter = 'all';
+let selectedMonitorCategory = 'ALL';
 let monitorSubMode = 'matrix';
 let dashboardSortAsc = true;
 let liveClockTimer = null;
@@ -26,7 +27,7 @@ const DAYSLEFT_META = {
   CAUTION:  { label: 'Caution (31–90d)',symbol: '<span class="color-circle-dot" style="background-color:#facc15;"></span>' },
   NORMAL:   { label: 'Normal (> 90d)',  symbol: '<span class="color-circle-dot" style="background-color:#22c55e;"></span>' },
   EXEMPTED: { label: 'Exempted',        symbol: '<span class="color-circle-dot" style="background-color:#94a3b8;"></span>' },
-  PASS:     { label: 'Pass',            symbol: '<i class="fa-solid fa-check text-success" style="width:12px;"></i>' },
+  PASS:     { label: 'Pass',            symbol: '<i class="fa-solid fa-check text-info" style="width:12px;"></i>' },
   ALL:      { label: 'All',             symbol: '<span class="color-circle-dot" style="background-color:#3b82f6;"></span>' }
 };
 
@@ -719,11 +720,11 @@ function getSoftRemainingBadge(rec) {
   }
   const dVal = rec.daysLeft;
   if (dVal === '' || dVal === null || dVal === undefined) {
-    return '<span class="remain-soft-badge" style="background:#e0f2fe;color:#0369a1;"><i class="fa-solid fa-check"></i> Pass</span>';
+    return '<span class="remain-pass-badge"><i class="fa-solid fa-check"></i> Pass</span>';
   }
   const n = Number(dVal);
   if (isNaN(n)) {
-    return `<span class="remain-soft-badge" style="background:#e0f2fe;color:#0369a1;">${escapeHtml(dVal)}</span>`;
+    return `<span class="remain-pass-badge">${escapeHtml(dVal)}</span>`;
   }
   if (n <= 0) {
     return `<span class="remain-soft-badge" style="background:#fee2e2;color:#b91c1c;"><i class="fa-regular fa-clock"></i> ${n}d</span>`;
@@ -1128,6 +1129,70 @@ function selectMonitorScope(scope) {
   renderMonitorView();
 }
 
+function selectMonitorCategory(category) {
+  selectedMonitorCategory = category || 'ALL';
+  syncMonitorCategoryUI(selectedMonitorCategory);
+
+  const typeSel = document.getElementById('monFilterType');
+  if (typeSel) {
+    typeSel.value = selectedMonitorCategory === 'ALL' ? 'ALL' : selectedMonitorCategory;
+  }
+  syncMonitorCascadeOptions(true);
+  renderMonitorView();
+}
+
+function onMonitorTypeDropdownChange() {
+  const val = document.getElementById('monFilterType')?.value || 'ALL';
+  selectedMonitorCategory = val;
+  syncMonitorCategoryUI(val);
+  syncMonitorCascadeOptions(true);
+  renderMonitorView();
+}
+
+function syncMonitorCategoryUI(category) {
+  document.querySelectorAll('#monitorCategoryButtons .category-pill-btn').forEach(btn => {
+    const isMatch = btn.dataset.monType === category;
+    btn.classList.toggle('is-selected', isMatch);
+    const checkIcon = btn.querySelector('.category-check-icon');
+    if (checkIcon) checkIcon.classList.toggle('d-none', !isMatch);
+  });
+}
+
+function updateMonitorCategoryCounts() {
+  const atoFilter = document.getElementById('monFilterAto')?.value || 'ALL';
+  const baseRecs = monitorRawData.records.filter(r =>
+    atoFilter === 'ALL' || String(r.ato || '').trim() === atoFilter
+  );
+
+  const total = baseRecs.length;
+  const catAllEl = document.getElementById('monCatCountAll');
+  if (catAllEl) catAllEl.innerText = `${total} รายการ`;
+
+  const counts = {
+    'Initial Training': 0,
+    'Recurrent Training': 0,
+    'Optional Training': 0,
+    'Continuing Training': 0,
+    'Personnel Licensing': 0
+  };
+  baseRecs.forEach(r => {
+    const t = String(r.type || '').trim();
+    if (counts[t] !== undefined) counts[t]++;
+  });
+
+  const defs = [
+    { id: 'monCatCountInitial',    cat: 'Initial Training',    desc: 'การฝึกอบรมเริ่มต้น' },
+    { id: 'monCatCountRecurrent',  cat: 'Recurrent Training',  desc: 'การฝึกอบรมทบทวนตามรอบ' },
+    { id: 'monCatCountOptional',   cat: 'Optional Training',   desc: 'การฝึกอบรมเพิ่มเติม' },
+    { id: 'monCatCountContinuing', cat: 'Continuing Training', desc: 'การพัฒนาความรู้ต่อเนื่อง' },
+    { id: 'monCatCountLicensing',  cat: 'Personnel Licensing', desc: 'ใบอนุญาตและคุณสมบัติบุคลากร' }
+  ];
+  defs.forEach(({ id, cat, desc }) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = counts[cat] > 0 ? `${counts[cat]} รายการ · ${desc}` : desc;
+  });
+}
+
 function setMonitorSubMode(mode) {
   monitorSubMode = mode === 'alert' ? 'alert' : 'matrix';
   document.getElementById('btnMonViewMatrix')?.classList.toggle('is-active', monitorSubMode === 'matrix');
@@ -1142,7 +1207,8 @@ function matchesMonitorScope(rec, scope) {
   const bucket = getRecordBucket(rec);
   if (scope === 'expired') return bucket === 'EXPIRE';
   if (scope === 'expiring') return bucket === 'WARNING' || bucket === 'CAUTION';
-  if (scope === 'normal') return bucket === 'NORMAL' || bucket === 'PASS';
+  if (scope === 'normal') return bucket === 'NORMAL';
+  if (scope === 'pass') return bucket === 'PASS' || bucket === 'EXEMPTED';
   return true;
 }
 
@@ -1183,10 +1249,10 @@ function initMonitorFilters() {
   fillFilterDropdown('monFilterType', types, 'All Types');
 
   const atoSel = document.getElementById('monFilterAto');
-  const typeSel = document.getElementById('monFilterType');
   if (atoSel && [...atoSel.options].some(o => o.value === 'ATCO')) atoSel.value = 'ATCO';
-  if (typeSel && [...typeSel.options].some(o => o.value === 'Recurrent Training')) typeSel.value = 'Recurrent Training';
 
+  selectedMonitorCategory = 'ALL';
+  syncMonitorCategoryUI('ALL');
   syncMonitorCascadeOptions(true);
 }
 
@@ -1196,6 +1262,7 @@ function onMonitorFilterChange() {
 }
 
 function syncMonitorCascadeOptions(resetSubFilters) {
+  updateMonitorCategoryCounts();
   const ato = document.getElementById('monFilterAto')?.value || 'ALL';
   const type = document.getElementById('monFilterType')?.value || 'ALL';
   const sub1El = document.getElementById('monFilterSub1');
@@ -1283,21 +1350,24 @@ function renderMonitorView() {
     return true;
   });
 
-  // คำนวณ KPI จากชุดข้อมูลที่กรองตามหมวด/ตำแหน่ง
+  // คำนวณ KPI แยกตามสถานะรวมถึง Pass
   let kpiNormal = 0;
   let kpiExpiring = 0;
   let kpiExpired = 0;
+  let kpiPass = 0;
   contextRecs.forEach(r => {
     const b = getRecordBucket(r);
-    if (b === 'NORMAL' || b === 'PASS') kpiNormal++;
+    if (b === 'NORMAL') kpiNormal++;
     else if (b === 'WARNING' || b === 'CAUTION') kpiExpiring++;
     else if (b === 'EXPIRE') kpiExpired++;
+    else if (b === 'PASS' || b === 'EXEMPTED') kpiPass++;
   });
 
   document.getElementById('monKpiUsers').innerText = filteredUsers.length;
   document.getElementById('monKpiNormal').innerText = kpiNormal;
   document.getElementById('monKpiExpiring').innerText = kpiExpiring;
   document.getElementById('monKpiExpired').innerText = kpiExpired;
+  document.getElementById('monKpiPass').innerText = kpiPass;
 
   const urgentRecs = contextRecs
     .filter(r => {
@@ -1311,7 +1381,7 @@ function renderMonitorView() {
   const scopedRecs = contextRecs.filter(r => matchesMonitorScope(r, monitorScopeFilter));
   const summaryEl = document.getElementById('monitorSummaryText');
   if (summaryEl) {
-    summaryEl.innerText = `แสดง ${filteredUsers.length} บุคลากร · ${scopedRecs.length} รายการ · ต้องติดตาม ${urgentRecs.length} รายการ`;
+    summaryEl.innerText = `แสดง ${filteredUsers.length} บุคลากร · ${scopedRecs.length} รายการ · Pass ${kpiPass} รายการ · ต้องติดตาม ${urgentRecs.length} รายการ`;
   }
 
   if (monitorSubMode === 'alert') {
@@ -1460,10 +1530,10 @@ function formatMonitorCellDays(days, statusStr) {
     return '<span class="remain-soft-badge" style="background:#e2e8f0;color:#334155;">Exempted</span>';
   }
   if (days === '' || days === null || days === undefined) {
-    return '<span class="remain-soft-badge" style="background:#e0f2fe;color:#0369a1;"><i class="fa-solid fa-check"></i> Pass</span>';
+    return '<span class="remain-pass-badge"><i class="fa-solid fa-check"></i> Pass</span>';
   }
   const n = Number(days);
-  if (isNaN(n)) return `<span class="remain-soft-badge" style="background:#e2e8f0;color:#334155;">${escapeHtml(days)}</span>`;
+  if (isNaN(n)) return `<span class="remain-pass-badge">${escapeHtml(days)}</span>`;
   if (n <= 0) return `<span class="remain-soft-badge" style="background:#fee2e2;color:#b91c1c;"><i class="fa-regular fa-clock"></i> ${n}d</span>`;
   if (n <= 30) return `<span class="remain-soft-badge" style="background:#ffedd5;color:#c2410c;"><i class="fa-regular fa-clock"></i> ${n}d</span>`;
   if (n <= 90) return `<span class="remain-soft-badge" style="background:#fef9c3;color:#a16207;"><i class="fa-regular fa-clock"></i> ${n}d</span>`;
@@ -1639,6 +1709,7 @@ function renderDashboardTable() {
   document.getElementById('dashCountNormal').innerText = counts.NORMAL;
   document.getElementById('dashCountCaution').innerText = counts.WARNING + counts.CAUTION;
   document.getElementById('dashCountExpire').innerText = counts.EXPIRE;
+  document.getElementById('dashCountPassCard').innerText = counts.PASS;
   document.getElementById('dashCountWarning').innerText = counts.WARNING;
   document.getElementById('dashCountCautionDetail').innerText = counts.CAUTION;
   document.getElementById('dashCountExempted').innerText = counts.EXEMPTED;
