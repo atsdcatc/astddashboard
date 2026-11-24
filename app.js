@@ -28,6 +28,32 @@ const DAYSLEFT_META = {
   ALL:      { label: 'All',      symbol: '<span class="color-circle-dot" style="background-color:#3b82f6;"></span>' }
 };
 
+function showAppLoading(title = 'กำลังโหลดข้อมูล...', subtitle = 'กรุณารอสักครู่') {
+  Swal.fire({
+    html: `
+      <div class="atsd-spinner-wrap">
+        <div class="atsd-spinner-ring"></div>
+        <div class="atsd-spinner-icon"><i class="fa-solid fa-plane-up"></i></div>
+      </div>
+      <div class="atsd-loading-title">${escapeHtml(title)}</div>
+      <div class="atsd-loading-sub">${escapeHtml(subtitle)}</div>
+    `,
+    showConfirmButton: false,
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    backdrop: 'rgba(15, 23, 42, 0.35)',
+    customClass: {
+      popup: 'atsd-loading-popup'
+    }
+  });
+}
+
+function hideAppLoading() {
+  if (Swal.isVisible()) {
+    Swal.close();
+  }
+}
+
 async function callApi(action, params = {}) {
   const response = await fetch(GAS_WEB_APP_URL, {
     method: 'POST',
@@ -399,7 +425,7 @@ async function handleEduModalFileUpload(input) {
   const colIndex = level === 'bachelor' ? 29 : (level === 'master' ? 33 : 37);
   const row = Number(document.getElementById('bgRow').value) || null;
 
-  Swal.fire({ title: 'กำลังอัปโหลดเอกสาร...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  showAppLoading('กำลังอัปโหลดเอกสาร...', 'บันทึกไฟล์แนบวุฒิการศึกษาลง Drive');
   try {
     const base64 = await readFileAsBase64(file);
     const res = await callApi('uploadFileToDrive', {
@@ -410,7 +436,7 @@ async function handleEduModalFileUpload(input) {
       sheetType: 'bg',
       isImage: false
     });
-    Swal.close();
+    hideAppLoading();
     if (res.success) {
       document.getElementById('eduModalFileUrl').value = res.url;
       document.getElementById('eduModalFileStatus').innerHTML =
@@ -419,7 +445,7 @@ async function handleEduModalFileUpload(input) {
       Swal.fire('ผิดพลาด', res.message, 'error');
     }
   } catch (err) {
-    Swal.close();
+    hideAppLoading();
     Swal.fire('Error', err.message, 'error');
   }
 }
@@ -449,7 +475,7 @@ function clearEduFromModal() {
 
 async function loadProfileData() {
   if (!currentUser || currentUser.role === 'admin') return;
-  Swal.showLoading();
+  showAppLoading('กำลังโหลดข้อมูลประวัติ...', 'ดึงข้อมูลจากระบบ ATSD CATC');
   experienceItems = [];
   educationStore = {
     bachelor: { year: '', deg: '', uni: '', file: '' },
@@ -461,7 +487,7 @@ async function loadProfileData() {
 
   try {
     const data = await callApi('getBackgroundData', { initialName: currentUser.initialName });
-    Swal.close();
+    hideAppLoading();
     if (data && data.error) {
       Swal.fire('แจ้งเตือน', data.error, 'warning');
       return;
@@ -518,7 +544,7 @@ async function loadProfileData() {
     };
     renderEducationSection();
   } catch (err) {
-    Swal.close();
+    hideAppLoading();
     Swal.fire('Error', err.message, 'error');
   }
 }
@@ -537,7 +563,7 @@ async function handleBgPicUpload(input) {
   const file = input.files[0];
   const row = Number(document.getElementById('bgRow').value) || null;
 
-  Swal.fire({ title: 'กำลังอัปโหลดรูปภาพ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  showAppLoading('กำลังอัปโหลดรูปภาพ...', 'บันทึกรูปโปรไฟล์ลงระบบ');
   try {
     const base64 = await readFileAsBase64(file);
     const res = await callApi('uploadFileToDrive', {
@@ -548,7 +574,7 @@ async function handleBgPicUpload(input) {
       sheetType: 'bg',
       isImage: true
     });
-    Swal.close();
+    hideAppLoading();
     if (res.success) {
       document.getElementById('bgPicPreview').src = res.directUrl;
       document.getElementById('bgPicUrl').value = res.directUrl;
@@ -557,7 +583,7 @@ async function handleBgPicUpload(input) {
       Swal.fire('ผิดพลาด', res.message, 'error');
     }
   } catch (err) {
-    Swal.close();
+    hideAppLoading();
     Swal.fire('Error', err.message, 'error');
   }
 }
@@ -592,10 +618,10 @@ async function saveProfileData() {
     }
   };
 
-  Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  showAppLoading('กำลังบันทึกข้อมูล...', 'อัปเดตประวัติส่วนตัวของคุณ');
   try {
     const res = await callApi('updateBackgroundData', { row, d: payload });
-    Swal.close();
+    hideAppLoading();
     if (res.success) {
       if (res.row) {
         document.getElementById('bgRow').value = res.row;
@@ -605,13 +631,13 @@ async function saveProfileData() {
       Swal.fire('เกิดข้อผิดพลาด', res.message, 'error');
     }
   } catch (err) {
-    Swal.close();
+    hideAppLoading();
     Swal.fire('Error', err.message, 'error');
   }
 }
 
 async function exportPDF() {
-  Swal.fire({ title: 'กำลังสร้างไฟล์ PDF...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  showAppLoading('กำลังสร้างไฟล์ PDF...', 'จัดเตรียมเอกสารประวัติส่วนตัว');
   try {
     const url = await callApi('generateInstructorProfilePDF', { userInitialName: currentUser.initialName });
     Swal.fire({
@@ -1029,7 +1055,7 @@ document.getElementById('addRecordForm').addEventListener('submit', async functi
   const expireDate = document.getElementById('addExpireDate').value;
   const fileInput = document.getElementById('addFile');
 
-  Swal.fire({ title: 'กำลังตรวจสอบข้อมูลซ้ำ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  showAppLoading('กำลังตรวจสอบข้อมูลซ้ำ...', 'ตรวจสอบประวัติการฝึกอบรมและใบอนุญาต');
 
   try {
     const dupRes = await callApi('checkDuplicateRecord', {
@@ -1037,6 +1063,7 @@ document.getElementById('addRecordForm').addEventListener('submit', async functi
     });
 
     if (dupRes.isDuplicate) {
+      hideAppLoading();
       const choice = await Swal.fire({
         title: 'พบข้อมูลวิชานี้ในระบบแล้ว!',
         html: `Active เดิม: <b>${dupRes.oldActive}</b> | Expire เดิม: <b>${dupRes.oldExpire}</b><br>สถานะ: <b>${dupRes.oldStatus}</b><br><br>ต้องการบันทึกทับข้อมูลเดิมหรือไม่?`,
@@ -1049,8 +1076,6 @@ document.getElementById('addRecordForm').addEventListener('submit', async functi
         await processFileAndSubmit(fileInput, {
           initialName: currentUser.initialName, ato, type, sub1, sub2, sub3, activeDate, expireDate, overwriteRow: dupRes.row
         });
-      } else {
-        Swal.close();
       }
     } else {
       await processFileAndSubmit(fileInput, {
@@ -1058,12 +1083,13 @@ document.getElementById('addRecordForm').addEventListener('submit', async functi
       });
     }
   } catch (err) {
+    hideAppLoading();
     Swal.fire('Error', err.message, 'error');
   }
 });
 
 async function processFileAndSubmit(fileInput, payload) {
-  Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  showAppLoading('กำลังบันทึกข้อมูล...', 'อัปโหลดไฟล์แนบและบันทึกข้อมูลลงระบบ');
 
   if (fileInput.files && fileInput.files[0]) {
     const file = fileInput.files[0];
@@ -1084,6 +1110,7 @@ async function processFileAndSubmit(fileInput, payload) {
   }
 
   await callApi('submitTrainingRecord', { data: payload });
+  hideAppLoading();
   Swal.fire('สำเร็จ!', 'บันทึกข้อมูลเรียบร้อยแล้ว (รอ Admin อนุมัติ)', 'success');
   document.getElementById('addRecordForm').reset();
   toggleExtraSubsPanel(false);
