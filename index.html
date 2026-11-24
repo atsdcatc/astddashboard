@@ -522,7 +522,7 @@
           <input type="password" id="loginPass" class="form-control" required placeholder="Password">
         </div>
         <button type="submit" id="btnLogin" class="btn btn-primary w-100 py-2 fw-bold">
-          <i class="fa-solid fa-right-to-bracket me-1"></i> เข้าสู่ระบบ
+          <i class="fa-solid fa-right-to-bracket me-1"></i> LOG IN
         </button>
       </form>
     </div>
@@ -538,8 +538,8 @@
           <button type="button" class="btn btn-sm btn-outline-light me-2" data-bs-toggle="modal" data-bs-target="#passwordModal" title="เปลี่ยนรหัสผ่าน">
             <i class="fa-solid fa-key"></i>
           </button>
-          <button type="button" class="btn btn-sm btn-danger" onclick="logout()">
-            <i class="fa-solid fa-power-off"></i> ออก
+          <button type="button" class="btn btn-sm btn-danger" onclick="logout()" title="ออกจากระบบ">
+            <i class="fa-solid fa-power-off"></i>
           </button>
         </div>
       </div>
@@ -596,7 +596,7 @@
                   <i class="fa-solid fa-file-pdf me-1"></i> Export Profile PDF
                 </button>
                 <button type="button" class="btn btn-primary btn-sm px-3" onclick="saveProfileData()" id="btnSaveBg">
-                  <i class="fa-solid fa-save me-1"></i> บันทึกการเปลี่ยนแปลง
+                  <i class="fa-solid fa-save me-1"></i> บันทึก
                 </button>
               </div>
             </div>
@@ -708,7 +708,7 @@
                       </div>
                     </div>
                     <button type="button" id="btnAddExp" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" onclick="openExpModal(-1)">
-                      <i class="fa-solid fa-plus me-1"></i> เพิ่มใหม่
+                      <i class="fa-solid fa-plus me-1"></i> เพิ่ม
                     </button>
                   </div>
                   <div class="accent-bar-green mb-4"></div>
@@ -730,7 +730,7 @@
               </div>
               <div class="d-flex align-items-center gap-2">
                 <button type="button" class="btn btn-dark rounded-pill px-3 py-2 fw-semibold" onclick="goToAddRecordTab()">
-                  <i class="fa-solid fa-plus me-1"></i> เพิ่มรายการ
+                  <i class="fa-solid fa-plus me-1"></i> เพิ่ม
                 </button>
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2" onclick="loadUserTraining()" title="รีเฟรชข้อมูล">
                   <i class="fa-solid fa-rotate"></i>
@@ -919,7 +919,7 @@
 
             <form id="addRecordForm" class="d-flex flex-column gap-3">
               <div class="form-field-box">
-                <label class="form-label">หน่วยงานฝึกอบรม (ATO) <span class="text-danger">*</span></label>
+                <label class="form-label">ATO <span class="text-danger">*</span></label>
                 <select id="addAto" class="form-select" required onchange="onAtoOrTypeChange()"></select>
               </div>
 
@@ -974,7 +974,7 @@
 
               <div class="mt-2 d-flex justify-content-end">
                 <button type="submit" id="btnSubmitRecord" class="btn btn-success px-4 py-2 fw-bold rounded-pill">
-                  <i class="fa-solid fa-paper-plane me-1"></i> ส่งข้อมูลบันทึก
+                  <i class="fa-solid fa-paper-plane me-1"></i> บันทึก
                 </button>
               </div>
             </form>
@@ -1005,7 +1005,6 @@
               </div>
             </div>
 
-            <!-- การ์ดสรุป 5 ช่อง (รวมสถานะสีฟ้า Pass) -->
             <div class="row g-3 mb-4">
               <div class="col-6 col-md-4 col-lg">
                 <div class="summary-stat-box stat-total active-stat" data-mon-scope="all" onclick="selectMonitorScope('all')">
@@ -1054,7 +1053,6 @@
               </div>
             </div>
 
-            <!-- การแบ่งหมวดหมู่ Type แบบเดียวกับฝั่ง User -->
             <div class="mb-4">
               <div class="fw-bold text-dark mb-2">หมวดหมู่การฝึกอบรม (Type)</div>
               <div class="row g-2" id="monitorCategoryButtons">
@@ -1133,7 +1131,6 @@
               </div>
             </div>
 
-            <!-- ตัวกรองแบบสะอาด -->
             <div class="filter-panel mb-3">
               <div class="row g-2 mb-2">
                 <div class="col-12 col-md-4">
@@ -1194,7 +1191,6 @@
               </div>
             </div>
 
-            <!-- คำอธิบายสีสถานะ -->
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small mb-3 px-1">
               <div class="d-flex flex-wrap gap-3">
                 <span class="legend-dot-item"><span class="color-circle-dot" style="background:#22c55e;"></span> ใช้งานได้ (&gt; 90 วัน)</span>
@@ -1205,7 +1201,6 @@
               <span class="text-muted" id="monitorSummaryText">กำลังโหลดข้อมูล...</span>
             </div>
 
-            <!-- มุมมอง Matrix -->
             <div id="monitorMatrixSection" class="border rounded-3 overflow-hidden bg-white">
               <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0 text-center admin-soft-table">
@@ -1219,7 +1214,6 @@
               </div>
             </div>
 
-            <!-- มุมมอง Action Required (เรียงตามความเร่งด่วน) -->
             <div id="monitorAlertSection" class="hidden">
               <div id="monitorAlertList" class="d-flex flex-column gap-2"></div>
             </div>
@@ -1244,7 +1238,6 @@
               </div>
             </div>
 
-            <!-- การ์ดสรุป 5 ช่องหลัก (รวมสถานะสีฟ้า Pass) -->
             <div class="row g-3 mb-4">
               <div class="col-6 col-md-4 col-lg">
                 <div class="summary-stat-box stat-total active-stat" data-bucket="ALL" onclick="selectDashboardBucket('ALL')">
@@ -1293,7 +1286,6 @@
               </div>
             </div>
 
-            <!-- ตัวกรองแบบสะอาด -->
             <div class="filter-panel mb-3">
               <div class="row g-2">
                 <div class="col-6 col-md-2">
