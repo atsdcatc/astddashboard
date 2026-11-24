@@ -8,6 +8,8 @@ let trainingViewMode = 'card';
 let selectedTrainingCategory = 'ALL';
 let allAdminRecords = [];
 let monitorRawData = { users: [], records: [], db: {} };
+let monitorScopeFilter = 'all';
+let monitorSubMode = 'matrix';
 let dashboardSortAsc = true;
 let liveClockTimer = null;
 
@@ -19,13 +21,13 @@ let educationStore = {
 };
 
 const DAYSLEFT_META = {
-  EXPIRE:   { label: 'Expire',   symbol: '<span class="color-circle-dot" style="background-color:#ef4444;"></span>' },
-  WARNING:  { label: 'Warning',  symbol: '<span class="color-circle-dot" style="background-color:#f97316;"></span>' },
-  CAUTION:  { label: 'Caution',  symbol: '<span class="color-circle-dot" style="background-color:#facc15;"></span>' },
-  NORMAL:   { label: 'Normal',   symbol: '<span class="color-circle-dot" style="background-color:#22c55e;"></span>' },
-  EXEMPTED: { label: 'Exempted', symbol: '<span class="color-circle-dot" style="background-color:#e2e8f0;"></span>' },
-  PASS:     { label: 'Pass',     symbol: '<i class="fa-solid fa-check text-success" style="width:12px;"></i>' },
-  ALL:      { label: 'All',      symbol: '<span class="color-circle-dot" style="background-color:#3b82f6;"></span>' }
+  EXPIRE:   { label: 'Expire (≤ 0d)',  symbol: '<span class="color-circle-dot" style="background-color:#ef4444;"></span>' },
+  WARNING:  { label: 'Warning (1–30d)', symbol: '<span class="color-circle-dot" style="background-color:#f97316;"></span>' },
+  CAUTION:  { label: 'Caution (31–90d)',symbol: '<span class="color-circle-dot" style="background-color:#facc15;"></span>' },
+  NORMAL:   { label: 'Normal (> 90d)',  symbol: '<span class="color-circle-dot" style="background-color:#22c55e;"></span>' },
+  EXEMPTED: { label: 'Exempted',        symbol: '<span class="color-circle-dot" style="background-color:#94a3b8;"></span>' },
+  PASS:     { label: 'Pass',            symbol: '<i class="fa-solid fa-check text-success" style="width:12px;"></i>' },
+  ALL:      { label: 'All',             symbol: '<span class="color-circle-dot" style="background-color:#3b82f6;"></span>' }
 };
 
 function showAppLoading(title = 'กำลังโหลดข้อมูล...', subtitle = 'กรุณารอสักครู่') {
@@ -101,9 +103,9 @@ function startLiveClock() {
     const timeEl = document.getElementById('liveTimeDisplay');
     if (dateEl) {
       dateEl.innerText = now.toLocaleDateString('en-GB', {
-        weekday: 'long',
+        weekday: 'short',
         day: 'numeric',
-        month: 'long',
+        month: 'short',
         year: 'numeric'
       });
     }
@@ -111,7 +113,7 @@ function startLiveClock() {
       const hh = String(now.getHours()).padStart(2, '0');
       const mm = String(now.getMinutes()).padStart(2, '0');
       const ss = String(now.getSeconds()).padStart(2, '0');
-      timeEl.innerText = `${hh} : ${mm} : ${ss}`;
+      timeEl.innerText = `${hh}:${mm}:${ss}`;
     }
   };
   updateClock();
@@ -670,7 +672,7 @@ function onTrainingStatusDropdownChange() {
 }
 
 function highlightSummaryStatBox(statValue) {
-  document.querySelectorAll('.summary-stat-box').forEach(box => {
+  document.querySelectorAll('#tabTraining .summary-stat-box').forEach(box => {
     box.classList.toggle('active-stat', box.dataset.stat === statValue);
   });
 }
@@ -713,26 +715,26 @@ function getSoftStatusBadge(status) {
 function getSoftRemainingBadge(rec) {
   const status = String(rec.statusStr || '').trim().toLowerCase();
   if (status === 'exempted' || status === 'exempt') {
-    return '<span class="remain-soft-badge" style="background:#e2e8f0;color:#334155;">⚪ Exempted</span>';
+    return '<span class="remain-soft-badge" style="background:#e2e8f0;color:#334155;">Exempted</span>';
   }
   const dVal = rec.daysLeft;
   if (dVal === '' || dVal === null || dVal === undefined) {
-    return '<span class="remain-soft-badge">✅ Pass</span>';
+    return '<span class="remain-soft-badge" style="background:#e0f2fe;color:#0369a1;"><i class="fa-solid fa-check"></i> Pass</span>';
   }
   const n = Number(dVal);
   if (isNaN(n)) {
-    return `<span class="remain-soft-badge">✅ ${escapeHtml(dVal)}</span>`;
+    return `<span class="remain-soft-badge" style="background:#e0f2fe;color:#0369a1;">${escapeHtml(dVal)}</span>`;
   }
   if (n <= 0) {
-    return `<span class="remain-soft-badge" style="background:#fee2e2;color:#b91c1c;"><i class="fa-regular fa-clock"></i> ${n}</span>`;
+    return `<span class="remain-soft-badge" style="background:#fee2e2;color:#b91c1c;"><i class="fa-regular fa-clock"></i> ${n}d</span>`;
   }
   if (n <= 30) {
-    return `<span class="remain-soft-badge" style="background:#ffedd5;color:#c2410c;"><i class="fa-regular fa-clock"></i> ${n}</span>`;
+    return `<span class="remain-soft-badge" style="background:#ffedd5;color:#c2410c;"><i class="fa-regular fa-clock"></i> ${n}d</span>`;
   }
   if (n <= 90) {
-    return `<span class="remain-soft-badge" style="background:#fef9c3;color:#a16207;"><i class="fa-regular fa-clock"></i> ${n}</span>`;
+    return `<span class="remain-soft-badge" style="background:#fef9c3;color:#a16207;"><i class="fa-regular fa-clock"></i> ${n}d</span>`;
   }
-  return `<span class="remain-soft-badge"><i class="fa-regular fa-clock"></i> ${n}</span>`;
+  return `<span class="remain-soft-badge"><i class="fa-regular fa-clock"></i> ${n}d</span>`;
 }
 
 function setTrainingViewMode(mode) {
@@ -1117,7 +1119,33 @@ async function processFileAndSubmit(fileInput, payload) {
   onAtoOrTypeChange();
 }
 
-// ================= 5. ADMIN: TRAINING MONITOR (MATRIX) =================
+// ================= 5. ADMIN: TRAINING MONITOR (MATRIX & ACTION REQUIRED) =================
+function selectMonitorScope(scope) {
+  monitorScopeFilter = scope || 'all';
+  document.querySelectorAll('#tabAdminMonitor .summary-stat-box').forEach(box => {
+    box.classList.toggle('active-stat', box.dataset.monScope === monitorScopeFilter);
+  });
+  renderMonitorView();
+}
+
+function setMonitorSubMode(mode) {
+  monitorSubMode = mode === 'alert' ? 'alert' : 'matrix';
+  document.getElementById('btnMonViewMatrix')?.classList.toggle('is-active', monitorSubMode === 'matrix');
+  document.getElementById('btnMonViewAlert')?.classList.toggle('is-active', monitorSubMode === 'alert');
+  document.getElementById('monitorMatrixSection')?.classList.toggle('hidden', monitorSubMode !== 'matrix');
+  document.getElementById('monitorAlertSection')?.classList.toggle('hidden', monitorSubMode !== 'alert');
+  renderMonitorView();
+}
+
+function matchesMonitorScope(rec, scope) {
+  if (!scope || scope === 'all') return true;
+  const bucket = getRecordBucket(rec);
+  if (scope === 'expired') return bucket === 'EXPIRE';
+  if (scope === 'expiring') return bucket === 'WARNING' || bucket === 'CAUTION';
+  if (scope === 'normal') return bucket === 'NORMAL' || bucket === 'PASS';
+  return true;
+}
+
 async function loadMonitor() {
   const body = document.getElementById('monitorMatrixBody');
   if (body) {
@@ -1131,7 +1159,7 @@ async function loadMonitor() {
       db: data?.db || {}
     };
     initMonitorFilters();
-    renderMonitorMatrix();
+    renderMonitorView();
   } catch (err) {
     if (body) {
       body.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">${err.message}</td></tr>`;
@@ -1164,7 +1192,7 @@ function initMonitorFilters() {
 
 function onMonitorFilterChange() {
   syncMonitorCascadeOptions(false);
-  renderMonitorMatrix();
+  renderMonitorView();
 }
 
 function syncMonitorCascadeOptions(resetSubFilters) {
@@ -1213,30 +1241,90 @@ function syncMonitorCascadeOptions(resetSubFilters) {
   fillFilterDropdown('monFilterSub3', sub3List, 'All Sub 3', prevSub3);
 }
 
-function renderMonitorMatrix() {
-  const headEl = document.getElementById('monitorMatrixHead');
-  const bodyEl = document.getElementById('monitorMatrixBody');
-  if (!headEl || !bodyEl) return;
-
+function renderMonitorView() {
   const posFilter = document.getElementById('monFilterPosition')?.value || 'ALL';
   const atoFilter = document.getElementById('monFilterAto')?.value || 'ALL';
   const typeFilter = document.getElementById('monFilterType')?.value || 'ALL';
   const sub1Filter = document.getElementById('monFilterSub1')?.value || 'ALL';
   const sub2Filter = document.getElementById('monFilterSub2')?.value || 'ALL';
   const sub3Filter = document.getElementById('monFilterSub3')?.value || 'ALL';
+  const keyword = (document.getElementById('monSearchInput')?.value || '').trim().toLowerCase();
 
   const filteredUsers = monitorRawData.users
-    .filter(u => posFilter === 'ALL' || String(u.position || '').trim() === posFilter)
+    .filter(u => {
+      if (posFilter !== 'ALL' && String(u.position || '').trim() !== posFilter) return false;
+      if (keyword) {
+        const uMatch = [u.initialName, u.position, u.nameEN, u.nameTH].filter(Boolean).join(' ').toLowerCase().includes(keyword);
+        const hasRecMatch = monitorRawData.records.some(r =>
+          String(r.initialName || '').trim() === String(u.initialName || '').trim() &&
+          [r.sub1, r.sub2, r.sub3, r.type].filter(Boolean).join(' ').toLowerCase().includes(keyword)
+        );
+        if (!uMatch && !hasRecMatch) return false;
+      }
+      return true;
+    })
     .sort((a, b) => String(a.initialName).localeCompare(String(b.initialName)));
 
-  const filteredRecords = monitorRawData.records.filter(r => {
+  const allowedUserSet = new Set(filteredUsers.map(u => String(u.initialName || '').trim()));
+
+  const contextRecs = monitorRawData.records.filter(r => {
+    const uName = String(r.initialName || '').trim();
+    if (!allowedUserSet.has(uName)) return false;
     if (atoFilter !== 'ALL' && String(r.ato || '').trim() !== atoFilter) return false;
     if (typeFilter !== 'ALL' && String(r.type || '').trim() !== typeFilter) return false;
     if (sub1Filter !== 'ALL' && String(r.sub1 || '').trim() !== sub1Filter) return false;
     if (sub2Filter !== 'ALL' && String(r.sub2 || '').trim() !== sub2Filter) return false;
     if (sub3Filter !== 'ALL' && String(r.sub3 || '').trim() !== sub3Filter) return false;
+    if (keyword) {
+      const uObj = monitorRawData.users.find(u => String(u.initialName || '').trim() === uName) || {};
+      const hay = [uName, uObj.position, r.sub1, r.sub2, r.sub3, r.type].filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(keyword)) return false;
+    }
     return true;
   });
+
+  // คำนวณ KPI จากชุดข้อมูลที่กรองตามหมวด/ตำแหน่ง
+  let kpiNormal = 0;
+  let kpiExpiring = 0;
+  let kpiExpired = 0;
+  contextRecs.forEach(r => {
+    const b = getRecordBucket(r);
+    if (b === 'NORMAL' || b === 'PASS') kpiNormal++;
+    else if (b === 'WARNING' || b === 'CAUTION') kpiExpiring++;
+    else if (b === 'EXPIRE') kpiExpired++;
+  });
+
+  document.getElementById('monKpiUsers').innerText = filteredUsers.length;
+  document.getElementById('monKpiNormal').innerText = kpiNormal;
+  document.getElementById('monKpiExpiring').innerText = kpiExpiring;
+  document.getElementById('monKpiExpired').innerText = kpiExpired;
+
+  const urgentRecs = contextRecs
+    .filter(r => {
+      const b = getRecordBucket(r);
+      return b === 'EXPIRE' || b === 'WARNING' || b === 'CAUTION';
+    })
+    .sort((a, b) => Number(a.daysLeft) - Number(b.daysLeft));
+
+  document.getElementById('monAlertBadgeCount').innerText = urgentRecs.length;
+
+  const scopedRecs = contextRecs.filter(r => matchesMonitorScope(r, monitorScopeFilter));
+  const summaryEl = document.getElementById('monitorSummaryText');
+  if (summaryEl) {
+    summaryEl.innerText = `แสดง ${filteredUsers.length} บุคลากร · ${scopedRecs.length} รายการ · ต้องติดตาม ${urgentRecs.length} รายการ`;
+  }
+
+  if (monitorSubMode === 'alert') {
+    renderMonitorAlertList(urgentRecs);
+  } else {
+    renderMonitorMatrix(filteredUsers, scopedRecs, sub1Filter);
+  }
+}
+
+function renderMonitorMatrix(filteredUsers, scopedRecs, sub1Filter) {
+  const headEl = document.getElementById('monitorMatrixHead');
+  const bodyEl = document.getElementById('monitorMatrixBody');
+  if (!headEl || !bodyEl) return;
 
   let columnHeaders = [];
   if (sub1Filter !== 'ALL') {
@@ -1247,12 +1335,12 @@ function renderMonitorMatrix() {
       .filter(v => v !== 'ALL');
     columnHeaders = availableOpts.length > 0
       ? availableOpts
-      : [...new Set(filteredRecords.map(r => String(r.sub1 || '').trim()).filter(Boolean))].sort();
+      : [...new Set(scopedRecs.map(r => String(r.sub1 || '').trim()).filter(Boolean))].sort();
   }
 
   headEl.innerHTML = `
     <tr>
-      <th class="text-start ps-3" style="min-width: 140px;">Initial Name</th>
+      <th class="text-start ps-3" style="min-width: 150px;">Initial</th>
       ${columnHeaders.map(col => `<th>${escapeHtml(col)}</th>`).join('')}
     </tr>
   `;
@@ -1264,40 +1352,122 @@ function renderMonitorMatrix() {
 
   bodyEl.innerHTML = filteredUsers.map(u => {
     const userName = String(u.initialName || '').trim();
-    const userRecs = filteredRecords.filter(r => String(r.initialName || '').trim() === userName);
+    const userRecs = scopedRecs.filter(r => String(r.initialName || '').trim() === userName);
 
     const cells = columnHeaders.map(colName => {
       const matched = userRecs.filter(r => String(r.sub1 || '').trim() === colName);
       if (matched.length === 0) {
-        return '<td class="text-muted">-</td>';
+        return '<td class="text-muted">—</td>';
       }
       const cellContent = matched.map(m => {
-        const extra = [m.sub2, m.sub3].filter(Boolean).join(' / ');
-        const badge = formatMonitorCellDays(m.daysLeft);
-        return extra ? `<div class="small fw-semibold">${escapeHtml(extra)}</div>${badge}` : badge;
-      }).join('<hr class="my-1">');
+        const extra = [m.sub2, m.sub3].filter(Boolean).join(' · ');
+        const badge = formatMonitorCellDays(m.daysLeft, m.statusStr);
+        return extra ? `<div class="small text-secondary mb-1">${escapeHtml(extra)}</div>${badge}` : badge;
+      }).join('<hr class="my-1 border-light">');
       return `<td>${cellContent}</td>`;
     }).join('');
 
     return `
       <tr>
-        <td class="text-start ps-3 fw-bold text-primary">${escapeHtml(userName)}</td>
+        <td class="text-start ps-3">
+          <button type="button" class="initial-link-btn" onclick="openPersonnelDrawer('${escapeAttr(userName)}')">
+            ${escapeHtml(userName)}
+          </button>
+          ${u.position ? `<div class="small text-muted">${escapeHtml(u.position)}</div>` : ''}
+        </td>
         ${cells}
       </tr>
     `;
   }).join('');
 }
 
-function formatMonitorCellDays(days) {
+function renderMonitorAlertList(urgentRecs) {
+  const container = document.getElementById('monitorAlertList');
+  if (!container) return;
+
+  if (urgentRecs.length === 0) {
+    container.innerHTML = '<div class="text-center py-4 text-muted bg-light rounded border">ไม่มีรายการที่หมดอายุหรือใกล้หมดอายุในตัวกรองนี้</div>';
+    return;
+  }
+
+  container.innerHTML = urgentRecs.map(r => {
+    const courseTitle = r.sub2 || r.sub1 || '-';
+    const subInfo = [r.type, r.sub1 && r.sub2 ? r.sub1 : '', r.sub3 ? `Role: ${r.sub3}` : ''].filter(Boolean).join(' · ');
+    return `
+      <div class="my-training-card">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <button type="button" class="initial-link-btn me-2" onclick="openPersonnelDrawer('${escapeAttr(r.initialName)}')">
+              ${escapeHtml(r.initialName)}
+            </button>
+            <strong class="text-dark">${escapeHtml(courseTitle)}</strong>
+            <div class="small text-muted">${escapeHtml(subInfo || '-')}</div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="small text-muted">หมดอายุ: <strong>${escapeHtml(formatDateDisplay(r.expire))}</strong></span>
+            ${formatMonitorCellDays(r.daysLeft, r.statusStr)}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openPersonnelDrawer(initialName) {
+  const uObj = monitorRawData.users.find(u => String(u.initialName || '').trim() === String(initialName || '').trim()) || {};
+  const recs = monitorRawData.records.filter(r => String(r.initialName || '').trim() === String(initialName || '').trim());
+
+  document.getElementById('drawerPersonTitle').innerText = `${initialName}${uObj.nameTH ? ` · ${uObj.nameTH}` : ''}`;
+  document.getElementById('drawerPersonSubtitle').innerText = uObj.position || 'บุคลากร ATSD CATC';
+
+  const urgentCount = recs.filter(r => {
+    const b = getRecordBucket(r);
+    return b === 'EXPIRE' || b === 'WARNING' || b === 'CAUTION';
+  }).length;
+
+  const bodyEl = document.getElementById('drawerPersonBody');
+  bodyEl.innerHTML = `
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <span class="badge bg-primary-subtle text-primary px-3 py-2">รายการทั้งหมด ${recs.length} รายการ</span>
+      <span class="badge bg-warning-subtle text-warning-emphasis px-3 py-2">ต้องติดตาม / ใกล้หมดอายุ ${urgentCount} รายการ</span>
+    </div>
+    ${recs.length === 0
+      ? '<div class="text-muted small py-3">ไม่พบประวัติการฝึกอบรมของบุคลากรรายนี้</div>'
+      : `<div class="d-flex flex-column gap-2">${recs.map(r => `
+          <div class="border rounded-3 p-3 bg-white">
+            <div class="d-flex justify-content-between align-items-start gap-2">
+              <div>
+                <div class="fw-bold text-dark">${escapeHtml(r.sub2 || r.sub1 || '-')}</div>
+                <div class="small text-muted">${escapeHtml([r.ato, r.type, r.sub1 && r.sub2 ? r.sub1 : '', r.sub3 ? `Role: ${r.sub3}` : ''].filter(Boolean).join(' · '))}</div>
+              </div>
+              ${formatMonitorCellDays(r.daysLeft, r.statusStr)}
+            </div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center small text-muted mt-2 pt-2 border-top">
+              <span>Active: <strong>${escapeHtml(formatDateDisplay(r.active))}</strong> · Expire: <strong>${escapeHtml(formatDateDisplay(r.expire))}</strong></span>
+              ${r.link ? `<a href="${escapeAttr(r.link)}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2">ดูไฟล์</a>` : ''}
+            </div>
+          </div>
+        `).join('')}</div>`
+    }
+  `;
+
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('personnelDrawerModal')).show();
+}
+
+function formatMonitorCellDays(days, statusStr) {
+  const st = String(statusStr || '').trim().toLowerCase();
+  if (st === 'exempted' || st === 'exempt') {
+    return '<span class="remain-soft-badge" style="background:#e2e8f0;color:#334155;">Exempted</span>';
+  }
   if (days === '' || days === null || days === undefined) {
-    return '<span class="badge bg-info text-dark">Pass</span>';
+    return '<span class="remain-soft-badge" style="background:#e0f2fe;color:#0369a1;"><i class="fa-solid fa-check"></i> Pass</span>';
   }
   const n = Number(days);
-  if (isNaN(n)) return `<span class="badge bg-secondary">${escapeHtml(days)}</span>`;
-  if (n <= 0) return `<span class="badge bg-danger">${n} d</span>`;
-  if (n <= 30) return `<span class="badge" style="background:#fd7e14;">${n} d</span>`;
-  if (n <= 90) return `<span class="badge bg-warning text-dark">${n} d</span>`;
-  return `<span class="badge bg-success">${n} d</span>`;
+  if (isNaN(n)) return `<span class="remain-soft-badge" style="background:#e2e8f0;color:#334155;">${escapeHtml(days)}</span>`;
+  if (n <= 0) return `<span class="remain-soft-badge" style="background:#fee2e2;color:#b91c1c;"><i class="fa-regular fa-clock"></i> ${n}d</span>`;
+  if (n <= 30) return `<span class="remain-soft-badge" style="background:#ffedd5;color:#c2410c;"><i class="fa-regular fa-clock"></i> ${n}d</span>`;
+  if (n <= 90) return `<span class="remain-soft-badge" style="background:#fef9c3;color:#a16207;"><i class="fa-regular fa-clock"></i> ${n}d</span>`;
+  return `<span class="remain-soft-badge"><i class="fa-regular fa-clock"></i> ${n}d</span>`;
 }
 
 // ================= 6. ADMIN: DASHBOARD OVERVIEW =================
@@ -1360,7 +1530,7 @@ function getRecordBucket(rec) {
 async function loadAdminDashboard() {
   const tbody = document.getElementById('dashboardTableBody');
   if (tbody) {
-    tbody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-muted">กำลังโหลดข้อมูล Dashboard...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">กำลังโหลดข้อมูล Dashboard...</td></tr>';
   }
   try {
     const res = await callApi('getAllTrainingRecords');
@@ -1369,7 +1539,7 @@ async function loadAdminDashboard() {
     renderDashboardTable();
   } catch (err) {
     if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4 text-danger">${err.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">${err.message}</td></tr>`;
     }
   }
 }
@@ -1428,8 +1598,8 @@ function selectDashboardBucket(bucket) {
 }
 
 function highlightDashboardCard(bucket) {
-  document.querySelectorAll('.dash-stat-card').forEach(card => {
-    card.classList.toggle('active-card', card.dataset.bucket === bucket);
+  document.querySelectorAll('#tabAdminDashboard .summary-stat-box').forEach(card => {
+    card.classList.toggle('active-stat', card.dataset.bucket === bucket);
   });
 }
 
@@ -1466,15 +1636,23 @@ function renderDashboardTable() {
   });
 
   document.getElementById('dashCountAll').innerText = counts.ALL;
+  document.getElementById('dashCountNormal').innerText = counts.NORMAL;
+  document.getElementById('dashCountCaution').innerText = counts.WARNING + counts.CAUTION;
   document.getElementById('dashCountExpire').innerText = counts.EXPIRE;
   document.getElementById('dashCountWarning').innerText = counts.WARNING;
-  document.getElementById('dashCountCaution').innerText = counts.CAUTION;
-  document.getElementById('dashCountNormal').innerText = counts.NORMAL;
+  document.getElementById('dashCountCautionDetail').innerText = counts.CAUTION;
   document.getElementById('dashCountExempted').innerText = counts.EXEMPTED;
   document.getElementById('dashCountPass').innerText = counts.PASS;
 
   const finalRows = baseFiltered
-    .filter(r => bucketFilter === 'ALL' || getRecordBucket(r) === bucketFilter)
+    .filter(r => {
+      if (bucketFilter === 'ALL') return true;
+      if (bucketFilter === 'CAUTION') {
+        const b = getRecordBucket(r);
+        return b === 'CAUTION' || b === 'WARNING';
+      }
+      return getRecordBucket(r) === bucketFilter;
+    })
     .sort((a, b) => {
       const aNum = (a.daysLeft === '' || a.daysLeft === null || isNaN(Number(a.daysLeft))) ? 999999 : Number(a.daysLeft);
       const bNum = (b.daysLeft === '' || b.daysLeft === null || isNaN(Number(b.daysLeft))) ? 999999 : Number(b.daysLeft);
@@ -1482,53 +1660,49 @@ function renderDashboardTable() {
     });
 
   if (finalRows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-muted">No records found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">ไม่พบรายการที่ตรงกับเงื่อนไข</td></tr>';
     return;
   }
 
   tbody.innerHTML = finalRows.map(r => {
+    const courseTitle = r.sub2 || r.sub1 || '-';
+    const subDetail = [r.ato, r.sub1 && r.sub2 ? r.sub1 : '', r.sub3 ? `Role: ${r.sub3}` : ''].filter(Boolean).join(' · ');
     const evidence = r.link
-      ? `<a href="${escapeAttr(r.link)}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2"><i class="fa-solid fa-file-lines me-1"></i>View</a>`
-      : '-';
+      ? `<a href="${escapeAttr(r.link)}" target="_blank" class="detail-outline-btn text-decoration-none"><i class="fa-regular fa-file-lines me-1"></i>View</a>`
+      : '<span class="text-muted">-</span>';
+
     return `
       <tr>
-        <td class="fw-bold">${escapeHtml(r.initialName || '-')}</td>
-        <td>${escapeHtml(r.ato || '-')}</td>
-        <td>${escapeHtml(r.type || '-')}</td>
-        <td>${escapeHtml(r.sub1 || '-')}</td>
-        <td>${escapeHtml(r.sub2 || '-')}</td>
-        <td>${escapeHtml(r.sub3 || '-')}</td>
+        <td class="fw-bold text-primary">${escapeHtml(r.initialName || '-')}</td>
+        <td>
+          <div class="fw-semibold text-dark">${escapeHtml(courseTitle)}</div>
+          ${subDetail ? `<div class="small text-muted">${escapeHtml(subDetail)}</div>` : ''}
+        </td>
+        <td class="text-secondary">${escapeHtml(r.type || '-')}</td>
         <td class="text-nowrap">${formatDateDisplay(r.active)}</td>
         <td class="text-nowrap">${formatDateDisplay(r.expire)}</td>
         <td class="text-center text-nowrap">${formatDashboardDaysLeft(r)}</td>
-        <td class="text-center">${getStatusBadge(r.statusStr)}</td>
-        <td class="text-center">${evidence}</td>
+        <td class="text-center">${getSoftStatusBadge(r.statusStr)}</td>
+        <td class="text-end text-nowrap">${evidence}</td>
       </tr>
     `;
   }).join('');
 }
 
 function formatDashboardDaysLeft(rec) {
-  const bucket = getRecordBucket(rec);
-  if (bucket === 'EXEMPTED') return '<span class="badge bg-secondary">⚪ Exempted</span>';
-  if (bucket === 'PASS') return '<span class="badge" style="background:#20c997;color:#1e293b;">✅ Pass</span>';
-  const n = Number(rec.daysLeft);
-  if (bucket === 'EXPIRE') return `<span class="badge bg-danger">Expire (${n})</span>`;
-  if (bucket === 'WARNING') return `<span class="badge" style="background:#fd7e14;">${n} วัน</span>`;
-  if (bucket === 'CAUTION') return `<span class="badge bg-warning text-dark">${n} วัน</span>`;
-  return `<span class="badge bg-success">${n} วัน</span>`;
+  return formatMonitorCellDays(rec.daysLeft, rec.statusStr);
 }
 
 // ================= 7. ADMIN: APPROVED =================
 async function loadAdminRecords() {
   const tbody = document.getElementById('adminRecordsBody');
-  tbody.innerHTML = '<tr><td colspan="9" class="text-center">กำลังโหลดข้อมูล...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">กำลังโหลดข้อมูล...</td></tr>';
   try {
     const res = await callApi('getAllTrainingRecords');
     allAdminRecords = [...res].reverse();
     renderAdminTable();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">${err.message}</td></tr>`;
   }
 }
 
@@ -1539,26 +1713,36 @@ function renderAdminTable() {
 
   const filtered = allAdminRecords.filter(r => filter === 'all' || String(r.statusStr || '').toLowerCase() === filter);
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">ไม่มีรายการในหมวดหมู่นี้</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">ไม่มีรายการในหมวดหมู่นี้</td></tr>';
     return;
   }
 
   filtered.forEach(r => {
-    const courseFull = [r.sub1, r.sub2, r.sub3].filter(Boolean).join(' | ');
-    const fileLink = r.link ? `<a href="${escapeAttr(r.link)}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2">ดูไฟล์</a>` : '-';
+    const courseTitle = r.sub2 || r.sub1 || '-';
+    const subDetail = [r.ato, r.sub1 && r.sub2 ? r.sub1 : '', r.sub3 ? `Role: ${r.sub3}` : ''].filter(Boolean).join(' · ');
+    const fileLink = r.link
+      ? `<a href="${escapeAttr(r.link)}" target="_blank" class="detail-outline-btn text-decoration-none"><i class="fa-regular fa-file-lines me-1"></i>ดูไฟล์</a>`
+      : '<span class="text-muted">-</span>';
+
     tbody.innerHTML += `
       <tr>
-        <td class="fw-bold">${escapeHtml(r.initialName)}</td>
-        <td>${escapeHtml(r.ato)}</td>
-        <td>${escapeHtml(r.type)}</td>
-        <td>${escapeHtml(courseFull)}</td>
-        <td>${formatDateDisplay(r.active)}</td>
-        <td>${formatDateDisplay(r.expire)}</td>
+        <td class="fw-bold text-primary">${escapeHtml(r.initialName)}</td>
+        <td>
+          <div class="fw-semibold text-dark">${escapeHtml(courseTitle)}</div>
+          ${subDetail ? `<div class="small text-muted">${escapeHtml(subDetail)}</div>` : ''}
+        </td>
+        <td class="text-secondary">${escapeHtml(r.type || '-')}</td>
+        <td class="text-nowrap">${formatDateDisplay(r.active)}</td>
+        <td class="text-nowrap">${formatDateDisplay(r.expire)}</td>
         <td class="text-center">${fileLink}</td>
-        <td class="text-center">${getStatusBadge(r.statusStr)}</td>
-        <td class="text-center text-nowrap">
-          <button class="btn btn-xs btn-success py-0 px-2" onclick="changeRecordStatus(${r.row}, 'approve')"><i class="fa-solid fa-check"></i></button>
-          <button class="btn btn-xs btn-danger py-0 px-2" onclick="changeRecordStatus(${r.row}, 'reject')"><i class="fa-solid fa-xmark"></i></button>
+        <td class="text-center">${getSoftStatusBadge(r.statusStr)}</td>
+        <td class="text-end text-nowrap">
+          <button type="button" class="btn btn-sm btn-success rounded-pill px-2 py-1 me-1" onclick="changeRecordStatus(${r.row}, 'approve')" title="อนุมัติ">
+            <i class="fa-solid fa-check me-1"></i>อนุมัติ
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" onclick="changeRecordStatus(${r.row}, 'reject')" title="ปฏิเสธ">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
         </td>
       </tr>
     `;
