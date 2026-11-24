@@ -1,287 +1,1440 @@
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzPWv0y79-Xr8xMhIV-zwO5rTkKCRgDhSfQmMzBg_QmvqTzl3SkUCzHnxoQrpu0Q6VIVQ/exec';
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ATSD CATC Web App</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; color: #1e293b; }
+    .navbar-brand { font-weight: 700; letter-spacing: 0.5px; }
+    .profile-img { width: 132px; height: 132px; object-fit: cover; border-radius: 50%; border: 3px solid #0d6efd; background: #fff; }
+    .nav-pills .nav-link.active { background-color: #0d6efd; font-weight: 600; }
+    .card { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05); }
 
-const MAX_EXPERIENCE = 6;
-let currentUser = null;
-let dbOptions = null;
-let userTrainingRecords = [];
-let trainingViewMode = 'card';
-let selectedTrainingCategory = 'ALL';
-let allAdminRecords = [];
-let monitorRawData = { users: [], records: [], db: {} };
-let monitorScopeFilter = 'all';
-let monitorSubMode = 'matrix';
-let dashboardSortAsc = true;
-let liveClockTimer = null;
+    /* Custom Clean Loading Popup */
+    .atsd-loading-popup.swal2-popup {
+      border-radius: 18px !important;
+      padding: 1.75rem 2rem !important;
+      background: #ffffff !important;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.16) !important;
+      border: 1px solid #e2e8f0 !important;
+      width: auto !important;
+      min-width: 260px;
+      max-width: 340px;
+    }
+    .atsd-spinner-wrap {
+      position: relative;
+      width: 54px;
+      height: 54px;
+      margin: 0 auto 0.9rem;
+    }
+    .atsd-spinner-ring {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      border: 4px solid #e2e8f0;
+      border-top-color: #2563eb;
+      border-right-color: #0ea5e9;
+      animation: atsdSpin 0.85s linear infinite;
+    }
+    .atsd-spinner-icon {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #2563eb;
+      font-size: 1.05rem;
+    }
+    .atsd-loading-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 0.2rem;
+    }
+    .atsd-loading-sub {
+      font-size: 0.82rem;
+      color: #64748b;
+    }
+    @keyframes atsdSpin {
+      to { transform: rotate(360deg); }
+    }
 
-let experienceItems = [];
-let educationStore = {
-  bachelor: { year: '', deg: '', uni: '', file: '' },
-  master:   { year: '', deg: '', uni: '', file: '' },
-  doctor:   { year: '', deg: '', uni: '', file: '' }
-};
+    /* พื้นหลังการ์ดสีขาว + แถบเน้นและสีไอคอน */
+    .clean-section-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 6px rgba(15, 23, 42, 0.04);
+    }
+    .accent-bar-blue   { height: 4px; border-radius: 999px; background-color: #2563eb; margin-top: 0.85rem; }
+    .accent-bar-green  { height: 4px; border-radius: 999px; background-color: #16a34a; margin-top: 0.85rem; }
+    .accent-bar-purple { height: 4px; border-radius: 999px; background-color: #7c3aed; margin-top: 0.85rem; }
 
-const DAYSLEFT_META = {
-  EXPIRE:   { label: 'Expire (≤ 0d)',  symbol: '<span class="color-circle-dot" style="background-color:#ef4444;"></span>' },
-  WARNING:  { label: 'Warning (1–30d)', symbol: '<span class="color-circle-dot" style="background-color:#f97316;"></span>' },
-  CAUTION:  { label: 'Caution (31–90d)',symbol: '<span class="color-circle-dot" style="background-color:#facc15;"></span>' },
-  NORMAL:   { label: 'Normal (> 90d)',  symbol: '<span class="color-circle-dot" style="background-color:#22c55e;"></span>' },
-  EXEMPTED: { label: 'Exempted',        symbol: '<span class="color-circle-dot" style="background-color:#94a3b8;"></span>' },
-  PASS:     { label: 'Pass',            symbol: '<i class="fa-solid fa-check text-success" style="width:12px;"></i>' },
-  ALL:      { label: 'All',             symbol: '<span class="color-circle-dot" style="background-color:#3b82f6;"></span>' }
-};
+    .section-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+    }
 
-function showAppLoading(title = 'กำลังโหลดข้อมูล...', subtitle = 'กรุณารอสักครู่') {
-  Swal.fire({
-    html: `
-      <div class="atsd-spinner-wrap">
-        <div class="atsd-spinner-ring"></div>
-        <div class="atsd-spinner-icon"><i class="fa-solid fa-plane-up"></i></div>
+    .form-label { font-size: 0.875rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; }
+    .field-icon { color: #64748b; font-size: 0.8rem; width: 14px; text-align: center; }
+
+    /* Experience Timeline */
+    .timeline-wrapper {
+      position: relative;
+      padding-left: 1.75rem;
+    }
+    .timeline-wrapper::before {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 10px;
+      bottom: 10px;
+      width: 2px;
+      background-color: #cbd5e1;
+    }
+    .timeline-item {
+      position: relative;
+      padding-bottom: 1.25rem;
+    }
+    .timeline-item:last-child {
+      padding-bottom: 0;
+    }
+    .timeline-dot {
+      position: absolute;
+      left: -1.75rem;
+      top: 6px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 3px solid #ffffff;
+      box-shadow: 0 0 0 1px #cbd5e1;
+    }
+    .timeline-dot.current {
+      background-color: #16a34a;
+      box-shadow: 0 0 0 2px #bbf7d0;
+    }
+    .timeline-dot.past {
+      background-color: #94a3b8;
+    }
+
+    /* Education List Cards */
+    .edu-entry-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1rem 1.15rem;
+      transition: border-color 0.15s ease;
+    }
+    .edu-entry-card:hover {
+      border-color: #cbd5e1;
+    }
+    .edu-level-badge {
+      background-color: #eff6ff;
+      color: #2563eb;
+      font-weight: 600;
+      font-size: 0.8rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 8px;
+    }
+    .doc-available-tag {
+      color: #16a34a;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+    .doc-available-tag:hover {
+      text-decoration: underline;
+    }
+
+    /* User & Admin Soft KPI Cards */
+    .summary-stat-box {
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      user-select: none;
+    }
+    .summary-stat-box:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+    }
+    .summary-stat-box.active-stat {
+      outline: 2px solid #0f172a;
+      outline-offset: 1px;
+    }
+    .stat-total    { background-color: #eef4ff; color: #1d4ed8; border-color: #dbeafe; }
+    .stat-approved { background-color: #ecfdf5; color: #15803d; border-color: #bbf7d0; }
+    .stat-waiting  { background-color: #fefce8; color: #b45309; border-color: #fef08a; }
+    .stat-expiring { background-color: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+    .stat-expired  { background-color: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+
+    .category-pill-btn {
+      width: 100%;
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+    .category-pill-btn:hover {
+      border-color: #93c5fd;
+      background-color: #f8fafc;
+    }
+    .category-pill-btn.is-selected {
+      background-color: #eff6ff;
+      border: 1.5px solid #2563eb;
+    }
+
+    .view-switcher-pill {
+      display: inline-flex;
+      background-color: #f1f5f9;
+      padding: 3px;
+      border-radius: 999px;
+      border: 1px solid #e2e8f0;
+    }
+    .view-switch-btn {
+      border: none;
+      background: transparent;
+      color: #64748b;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.3rem 0.9rem;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .view-switch-btn.is-active {
+      background-color: #ffffff;
+      color: #0f172a;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.1);
+    }
+
+    .my-training-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1.15rem 1.25rem;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .my-training-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    }
+    .status-pill-approved {
+      background-color: #dcfce7;
+      color: #15803d;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+    }
+    .status-pill-waiting {
+      background-color: #fef9c3;
+      color: #a16207;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+    }
+    .status-pill-rejected {
+      background-color: #fee2e2;
+      color: #b91c1c;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+    }
+    .remain-soft-badge {
+      background-color: #dcfce7;
+      color: #15803d;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .detail-outline-btn {
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.32rem 0.8rem;
+      border-radius: 8px;
+    }
+    .detail-outline-btn:hover {
+      background-color: #f8fafc;
+      border-color: #94a3b8;
+    }
+
+    /* Training Form Progressive Disclosure */
+    .form-field-box {
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 0.55rem 0.85rem;
+    }
+    .form-field-box:focus-within {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+    .form-field-box .form-label {
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-bottom: 0.15rem;
+    }
+    .form-field-box .form-control,
+    .form-field-box .form-select {
+      border: none;
+      padding: 0.15rem 0;
+      font-weight: 600;
+      color: #0f172a;
+      background-color: transparent !important;
+      box-shadow: none !important;
+    }
+    .extra-sub-panel {
+      background-color: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 0.95rem 1rem;
+    }
+
+    /* Admin Soft Matrix & Filter Styling */
+    .clock-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.45rem 1.15rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #1e293b;
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+    .filter-panel {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 1rem 1.15rem;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+      border: 1px solid #e2e8f0;
+    }
+    .admin-soft-table thead th {
+      background-color: #f8fafc !important;
+      color: #475569 !important;
+      font-weight: 700;
+      font-size: 0.8rem;
+      border-bottom: 1px solid #e2e8f0 !important;
+      white-space: nowrap;
+    }
+    .admin-soft-table tbody td {
+      border-color: #f1f5f9 !important;
+      vertical-align: middle;
+    }
+    .initial-link-btn {
+      border: none;
+      background: transparent;
+      color: #2563eb;
+      font-weight: 700;
+      padding: 0;
+      text-decoration: none;
+    }
+    .initial-link-btn:hover {
+      text-decoration: underline;
+    }
+    .legend-dot-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: #475569;
+    }
+
+    /* Custom Days Left Dropdown with Color Symbols */
+    .daysleft-dropdown-wrap {
+      position: relative;
+    }
+    .daysleft-trigger-btn {
+      width: 100%;
+      background-color: #ffffff;
+      border: 1px solid #ced4da;
+      border-radius: 0.5rem;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.875rem;
+      color: #212529;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.35rem;
+      text-align: left;
+    }
+    .daysleft-trigger-btn:focus {
+      outline: none;
+      border-color: #86b7fe;
+      box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.2);
+    }
+    .daysleft-menu-pop {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      min-width: 175px;
+      background-color: #3f444a;
+      color: #ffffff;
+      border-radius: 10px;
+      padding: 0.35rem 0;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.28);
+      z-index: 1050;
+    }
+    .daysleft-option-item {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.42rem 0.8rem;
+      font-size: 0.875rem;
+      color: #f8fafc;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+    .daysleft-option-item:hover {
+      background-color: rgba(255, 255, 255, 0.12);
+    }
+    .daysleft-option-item.is-selected {
+      background-color: #3b82f6;
+      font-weight: 600;
+    }
+    .color-circle-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .badge-status { font-size: 0.78rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 999px; }
+    .hidden { display: none !important; }
+    #loginSection.is-hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- ================= LOGIN VIEW ================= -->
+  <div id="loginSection" class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="card p-4 shadow" style="width: 100%; max-width: 400px;">
+      <div class="text-center mb-4">
+        <i class="fa-solid fa-plane-departure fa-3x text-primary mb-2"></i>
+        <h4 class="fw-bold text-primary">ATSD CATC</h4>
+        <p class="text-muted small">Instructor & Training Management System</p>
       </div>
-      <div class="atsd-loading-title">${escapeHtml(title)}</div>
-      <div class="atsd-loading-sub">${escapeHtml(subtitle)}</div>
-    `,
-    showConfirmButton: false,
-    allowOutsideClick: false,
-    allowEscapeKey: false,
-    backdrop: 'rgba(15, 23, 42, 0.35)',
-    customClass: {
-      popup: 'atsd-loading-popup'
-    }
-  });
-}
+      <form id="loginForm">
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input type="text" id="loginUser" class="form-control" required placeholder="Initial Name">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" id="loginPass" class="form-control" required placeholder="Password">
+        </div>
+        <button type="submit" id="btnLogin" class="btn btn-primary w-100 py-2 fw-bold">
+          <i class="fa-solid fa-right-to-bracket me-1"></i> เข้าสู่ระบบ
+        </button>
+      </form>
+    </div>
+  </div>
 
-function hideAppLoading() {
-  if (Swal.isVisible()) {
-    Swal.close();
-  }
-}
+  <!-- ================= MAIN APP VIEW ================= -->
+  <div id="appSection" class="hidden">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
+      <div class="container">
+        <a class="navbar-brand" href="#"><i class="fa-solid fa-plane-up me-2"></i>ATSD CATC</a>
+        <div class="d-flex align-items-center text-white">
+          <span class="me-3"><i class="fa-solid fa-user-circle me-1"></i> <strong id="navUserDisplay"></strong> (<span id="navRoleDisplay"></span>)</span>
+          <button type="button" class="btn btn-sm btn-outline-light me-2" data-bs-toggle="modal" data-bs-target="#passwordModal" title="เปลี่ยนรหัสผ่าน">
+            <i class="fa-solid fa-key"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-danger" onclick="logout()">
+            <i class="fa-solid fa-power-off"></i> ออก
+          </button>
+        </div>
+      </div>
+    </nav>
 
-async function callApi(action, params = {}) {
-  const response = await fetch(GAS_WEB_APP_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action, params })
-  });
+    <div class="container my-4">
+      <ul class="nav nav-pills mb-4 bg-white p-2 rounded shadow-sm" id="mainTabs">
+        <!-- USER TABS -->
+        <li class="nav-item user-only">
+          <button type="button" id="tabBtnProfile" class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabProfile" onclick="loadProfileData()">
+            <i class="fa-solid fa-id-card me-1"></i> 1. Background
+          </button>
+        </li>
+        <li class="nav-item user-only">
+          <button type="button" id="tabBtnTraining" class="nav-link" data-bs-toggle="pill" data-bs-target="#tabTraining" onclick="loadUserTraining()">
+            <i class="fa-solid fa-graduation-cap me-1"></i> 2. My Training
+          </button>
+        </li>
+        <li class="nav-item user-only">
+          <button type="button" id="tabBtnAdd" class="nav-link" data-bs-toggle="pill" data-bs-target="#tabAdd" onclick="initAddForm()">
+            <i class="fa-solid fa-plus-circle me-1"></i> 3. Add Record
+          </button>
+        </li>
 
-  if (!response.ok) {
-    throw new Error('Network response was not ok: ' + response.status);
-  }
+        <!-- ADMIN TABS -->
+        <li class="nav-item admin-only hidden">
+          <button type="button" id="tabBtnAdminMonitor" class="nav-link" data-bs-toggle="pill" data-bs-target="#tabAdminMonitor" onclick="loadMonitor()">
+            <i class="fa-solid fa-desktop me-1"></i> Monitor
+          </button>
+        </li>
+        <li class="nav-item admin-only hidden">
+          <button type="button" id="tabBtnAdminDashboard" class="nav-link" data-bs-toggle="pill" data-bs-target="#tabAdminDashboard" onclick="loadAdminDashboard()">
+            <i class="fa-solid fa-chart-column me-1"></i> Dashboard
+          </button>
+        </li>
+        <li class="nav-item admin-only hidden">
+          <button type="button" id="tabBtnAdminApprove" class="nav-link" data-bs-toggle="pill" data-bs-target="#tabAdminApprove" onclick="loadAdminRecords()">
+            <i class="fa-solid fa-square-check me-1"></i> Approved
+          </button>
+        </li>
+      </ul>
 
-  const result = await response.json();
-  if (result && result.error) {
-    throw new Error(result.error);
-  }
-  return result.data;
-}
+      <div class="tab-content">
+        <!-- TAB 1: BACKGROUND -->
+        <div class="tab-pane fade show active user-only" id="tabProfile">
+          <div class="card p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 pb-3 border-bottom">
+              <div>
+                <h5 class="fw-bold text-primary mb-0">ข้อมูลประวัติส่วนตัว (Background)</h5>
+                <small class="text-muted">จัดการข้อมูลส่วนตัว ประสบการณ์ทำงาน และวุฒิการศึกษา</small>
+              </div>
+              <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="exportPDF()">
+                  <i class="fa-solid fa-file-pdf me-1"></i> Export Profile PDF
+                </button>
+                <button type="button" class="btn btn-primary btn-sm px-3" onclick="saveProfileData()" id="btnSaveBg">
+                  <i class="fa-solid fa-save me-1"></i> บันทึกการเปลี่ยนแปลง
+                </button>
+              </div>
+            </div>
 
-function setActiveTab(buttonId, paneId) {
-  document.querySelectorAll('#mainTabs .nav-link').forEach(btn => {
-    btn.classList.remove('active');
-    btn.setAttribute('aria-selected', 'false');
-  });
-  document.querySelectorAll('.tab-content .tab-pane').forEach(pane => {
-    pane.classList.remove('active', 'show');
-  });
+            <input type="hidden" id="bgRow">
 
-  const targetBtn = document.getElementById(buttonId);
-  const targetPane = document.getElementById(paneId);
-  if (targetBtn) {
-    targetBtn.classList.add('active');
-    targetBtn.setAttribute('aria-selected', 'true');
-  }
-  if (targetPane) {
-    targetPane.classList.add('active', 'show');
-  }
-}
+            <div class="row g-4">
+              <div class="col-lg-6 d-flex flex-column gap-4">
+                <div class="clean-section-card">
+                  <div class="d-flex align-items-center gap-3">
+                    <span class="section-icon-box bg-primary">
+                      <i class="fa-solid fa-address-book"></i>
+                    </span>
+                    <div>
+                      <h6 class="fw-bold text-dark mb-0">Profile</h6>
+                      <small class="text-muted">ข้อมูลพื้นฐาน</small>
+                    </div>
+                  </div>
+                  <div class="accent-bar-blue mb-3"></div>
 
-// ================= LIVE CLOCK (MONITOR) =================
-function startLiveClock() {
-  stopLiveClock();
-  const updateClock = () => {
-    const now = new Date();
-    const dateEl = document.getElementById('liveDateDisplay');
-    const timeEl = document.getElementById('liveTimeDisplay');
-    if (dateEl) {
-      dateEl.innerText = now.toLocaleDateString('en-GB', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-      });
-    }
-    if (timeEl) {
-      const hh = String(now.getHours()).padStart(2, '0');
-      const mm = String(now.getMinutes()).padStart(2, '0');
-      const ss = String(now.getSeconds()).padStart(2, '0');
-      timeEl.innerText = `${hh}:${mm}:${ss}`;
-    }
-  };
-  updateClock();
-  liveClockTimer = setInterval(updateClock, 1000);
-}
+                  <div class="text-center mb-3">
+                    <img id="bgPicPreview" src="https://via.placeholder.com/150?text=No+Image" class="profile-img mb-2 shadow-sm">
+                    <div>
+                      <label class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                        <i class="fa-solid fa-camera me-1"></i> เปลี่ยนรูปภาพ
+                        <input type="file" id="bgPicInput" accept="image/*" class="hidden" onchange="handleBgPicUpload(this)">
+                      </label>
+                      <input type="hidden" id="bgPicUrl">
+                    </div>
+                  </div>
 
-function stopLiveClock() {
-  if (liveClockTimer) {
-    clearInterval(liveClockTimer);
-    liveClockTimer = null;
-  }
-}
+                  <div class="row g-3">
+                    <div class="col-sm-6">
+                      <label class="form-label"><i class="fa-regular fa-user field-icon me-1"></i>Name (EN)</label>
+                      <input type="text" id="bgNameEN" class="form-control">
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label"><i class="fa-regular fa-user field-icon me-1"></i>ชื่อ-นามสกุล (TH)</label>
+                      <input type="text" id="bgNameTH" class="form-control">
+                    </div>
+                    <div class="col-sm-4">
+                      <label class="form-label"><i class="fa-solid fa-tag field-icon me-1"></i>Initial Name</label>
+                      <input type="text" id="bgInitial" class="form-control bg-light" readonly>
+                    </div>
+                    <div class="col-sm-4">
+                      <label class="form-label"><i class="fa-solid fa-briefcase field-icon me-1"></i>Position</label>
+                      <select id="bgPosition" class="form-select"></select>
+                    </div>
+                    <div class="col-sm-4">
+                      <label class="form-label"><i class="fa-regular fa-calendar field-icon me-1"></i>Start Date</label>
+                      <input type="text" id="bgDateStart" class="form-control" placeholder="dd/mm/yyyy">
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label"><i class="fa-regular fa-id-card field-icon me-1"></i>ID Card</label>
+                      <input type="text" id="bgIdCard" class="form-control">
+                    </div>
+                  </div>
+                </div>
 
-// ================= 1. AUTHENTICATION =================
-document.getElementById('loginForm').addEventListener('submit', async function(e) {
-  e.preventDefault();
-  const user = document.getElementById('loginUser').value.trim();
-  const pass = document.getElementById('loginPass').value.trim();
-  const btn = document.getElementById('btnLogin');
+                <div class="clean-section-card">
+                  <div class="d-flex justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                      <span class="section-icon-box" style="background-color:#7c3aed;">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                      </span>
+                      <div>
+                        <h6 class="fw-bold text-dark mb-0">Education</h6>
+                        <small class="text-muted">ประวัติการศึกษา</small>
+                      </div>
+                    </div>
+                    <span class="badge rounded-pill bg-light text-dark border px-3 py-2" id="eduCountBadge">0 รายการ</span>
+                  </div>
+                  <div class="accent-bar-purple mb-3"></div>
 
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังตรวจสอบ...';
+                  <div id="eduListContainer" class="d-flex flex-column gap-3 mb-3"></div>
 
-  try {
-    const res = await callApi('loginUser', { username: user, password: pass });
-    if (res.success) {
-      currentUser = res;
-      initAppAfterLogin();
-    } else {
-      Swal.fire('เข้าสู่ระบบไม่สำเร็จ', res.message, 'error');
-    }
-  } catch (err) {
-    Swal.fire('Error', err.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket me-1"></i> เข้าสู่ระบบ';
-  }
-});
+                  <button type="button" class="btn btn-outline-secondary w-100 py-2 rounded-3 fw-semibold" onclick="openEduModal()">
+                    <i class="fa-solid fa-plus me-1"></i> เพิ่มวุฒิการศึกษา
+                  </button>
 
-async function initAppAfterLogin() {
-  const loginSec = document.getElementById('loginSection');
-  const appSec = document.getElementById('appSection');
-  if (loginSec) loginSec.classList.add('is-hidden');
-  if (appSec) appSec.classList.remove('hidden');
+                  <input type="hidden" id="eduBachYear">
+                  <input type="hidden" id="eduBachDeg">
+                  <input type="hidden" id="eduBachUni">
+                  <input type="hidden" id="eduBachFile">
 
-  document.getElementById('navUserDisplay').innerText = currentUser.initialName;
-  document.getElementById('navRoleDisplay').innerText = currentUser.role.toUpperCase();
+                  <input type="hidden" id="eduMastYear">
+                  <input type="hidden" id="eduMastDeg">
+                  <input type="hidden" id="eduMastUni">
+                  <input type="hidden" id="eduMastFile">
 
-  const isAdmin = currentUser.role === 'admin';
-  document.querySelectorAll('.admin-only').forEach(el => {
-    el.classList.toggle('hidden', !isAdmin);
-  });
-  document.querySelectorAll('.user-only').forEach(el => {
-    el.classList.toggle('hidden', isAdmin);
-  });
+                  <input type="hidden" id="eduDocYear">
+                  <input type="hidden" id="eduDocDeg">
+                  <input type="hidden" id="eduDocUni">
+                  <input type="hidden" id="eduDocFile">
+                </div>
+              </div>
 
-  if (isAdmin) {
-    startLiveClock();
-    setActiveTab('tabBtnAdminMonitor', 'tabAdminMonitor');
-    await loadMonitor();
-    return;
-  }
+              <div class="col-lg-6">
+                <div class="clean-section-card h-100">
+                  <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                      <span class="section-icon-box bg-success">
+                        <i class="fa-solid fa-briefcase"></i>
+                      </span>
+                      <div>
+                        <h6 class="fw-bold text-dark mb-0">Experience</h6>
+                        <small class="text-muted d-block">ประสบการณ์ทำงาน</small>
+                        <small class="text-secondary" id="expCountText">0 รายการ</small>
+                      </div>
+                    </div>
+                    <button type="button" id="btnAddExp" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" onclick="openExpModal(-1)">
+                      <i class="fa-solid fa-plus me-1"></i> เพิ่มใหม่
+                    </button>
+                  </div>
+                  <div class="accent-bar-green mb-4"></div>
 
-  stopLiveClock();
-  setActiveTab('tabBtnProfile', 'tabProfile');
-
-  try {
-    const [opts, posList] = await Promise.all([
-      callApi('getDatabaseOptions'),
-      callApi('getBgPositionOptions')
-    ]);
-    dbOptions = opts;
-    populateSelect('bgPosition', posList || []);
-    loadProfileData();
-  } catch (err) {
-    Swal.fire('Error', err.message, 'error');
-  }
-}
-
-function logout() {
-  stopLiveClock();
-  currentUser = null;
-  const loginSec = document.getElementById('loginSection');
-  const appSec = document.getElementById('appSection');
-  if (appSec) appSec.classList.add('hidden');
-  if (loginSec) loginSec.classList.remove('is-hidden');
-
-  document.getElementById('loginForm').reset();
-  document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
-  document.querySelectorAll('.user-only').forEach(el => el.classList.remove('hidden'));
-  setActiveTab('tabBtnProfile', 'tabProfile');
-}
-
-async function changeUserPassword() {
-  const newPass = document.getElementById('newPasswordInput').value.trim();
-  if (!newPass) return Swal.fire('แจ้งเตือน', 'กรุณากรอกรหัสผ่านใหม่', 'warning');
-
-  try {
-    const res = await callApi('updatePassword', { username: currentUser.initialName, newPassword: newPass });
-    if (res.success) {
-      Swal.fire('สำเร็จ', 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว', 'success');
-      document.getElementById('newPasswordInput').value = '';
-      bootstrap.Modal.getInstance(document.getElementById('passwordModal')).hide();
-    } else {
-      Swal.fire('ผิดพลาด', res.message, 'error');
-    }
-  } catch (err) {
-    Swal.fire('Error', err.message, 'error');
-  }
-}
-
-// ================= 2. BACKGROUND PROFILE (TIMELINE & EDUCATION) =================
-function renderExperienceTimeline() {
-  const container = document.getElementById('expTimelineContainer');
-  const countText = document.getElementById('expCountText');
-  const addBtn = document.getElementById('btnAddExp');
-  if (!container) return;
-
-  if (countText) countText.innerText = `${experienceItems.length} รายการ`;
-  if (addBtn) addBtn.disabled = experienceItems.length >= MAX_EXPERIENCE;
-
-  if (experienceItems.length === 0) {
-    container.innerHTML = '<div class="text-muted small py-2">ยังไม่มีข้อมูลประสบการณ์ทำงาน กด "+ เพิ่มใหม่" เพื่อเพิ่มรายการ</div>';
-    return;
-  }
-
-  container.innerHTML = experienceItems.map((item, idx) => {
-    const yearStr = String(item.year || '').trim();
-    const dotClass = idx === 0 ? 'current' : 'past';
-    const currentBadge = idx === 0
-      ? '<span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-1">ปัจจุบัน</span>'
-      : '';
-
-    return `
-      <div class="timeline-item">
-        <span class="timeline-dot ${dotClass}"></span>
-        <div class="d-flex justify-content-between align-items-start gap-2">
-          <div>
-            <div class="fw-bold text-dark fs-6">${escapeHtml(item.pos || '-')}</div>
-            <div class="text-secondary small mt-1">${escapeHtml(item.name || '-')}</div>
-            <div class="text-muted small mt-1">${escapeHtml(yearStr || '-')}</div>
+                  <div id="expTimelineContainer" class="timeline-wrapper"></div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="d-flex align-items-center gap-2 flex-shrink-0">
-            ${currentBadge}
-            <button type="button" class="btn btn-link text-secondary p-1" title="แก้ไขรายการนี้" onclick="openExpModal(${idx})">
-              <i class="fa-solid fa-pen"></i>
-            </button>
+        </div>
+
+        <!-- TAB 2: MY TRAINING -->
+        <div class="tab-pane fade user-only" id="tabTraining">
+          <div class="card p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+              <div>
+                <h4 class="fw-bold text-dark mb-1">My Training</h4>
+                <div class="text-muted small">ประวัติการฝึกอบรมและใบอนุญาต</div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-dark rounded-pill px-3 py-2 fw-semibold" onclick="goToAddRecordTab()">
+                  <i class="fa-solid fa-plus me-1"></i> เพิ่มรายการ
+                </button>
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2" onclick="loadUserTraining()" title="รีเฟรชข้อมูล">
+                  <i class="fa-solid fa-rotate"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+              <div class="col-6 col-lg-3">
+                <div class="summary-stat-box stat-total active-stat" data-stat="all" onclick="selectTrainingStatFilter('all')">
+                  <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
+                    <i class="fa-solid fa-bars-staggered"></i>
+                    <span>รายการทั้งหมด</span>
+                  </div>
+                  <div class="fs-2 fw-bold lh-1" id="sumCountAll">0</div>
+                </div>
+              </div>
+              <div class="col-6 col-lg-3">
+                <div class="summary-stat-box stat-approved" data-stat="approve" onclick="selectTrainingStatFilter('approve')">
+                  <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
+                    <i class="fa-regular fa-circle-check"></i>
+                    <span>อนุมัติแล้ว</span>
+                  </div>
+                  <div class="fs-2 fw-bold lh-1" id="sumCountApproved">0</div>
+                </div>
+              </div>
+              <div class="col-6 col-lg-3">
+                <div class="summary-stat-box stat-waiting" data-stat="waiting approve" onclick="selectTrainingStatFilter('waiting approve')">
+                  <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
+                    <i class="fa-regular fa-clock"></i>
+                    <span>รออนุมัติ</span>
+                  </div>
+                  <div class="fs-2 fw-bold lh-1" id="sumCountWaiting">0</div>
+                </div>
+              </div>
+              <div class="col-6 col-lg-3">
+                <div class="summary-stat-box stat-expiring" data-stat="expiring" onclick="selectTrainingStatFilter('expiring')">
+                  <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
+                    <i class="fa-regular fa-calendar-xmark"></i>
+                    <span>ใกล้หมดอายุ</span>
+                  </div>
+                  <div class="fs-2 fw-bold lh-1" id="sumCountExpiring">—</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <div class="fw-bold text-dark mb-2">หมวดหมู่การฝึกอบรม</div>
+              <div class="row g-2" id="trainingCategoryButtons">
+                <div class="col-12 col-md-6">
+                  <button type="button" class="category-pill-btn is-selected" data-category="ALL" onclick="selectTrainingCategory('ALL')">
+                    <span class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-border-all text-primary"></i>
+                      <span>
+                        <span class="d-block fw-bold">ทั้งหมด</span>
+                        <small class="text-muted" id="catCountAll">0 รายการ</small>
+                      </span>
+                    </span>
+                    <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon"></i>
+                  </button>
+                </div>
+                <div class="col-12 col-md-6">
+                  <button type="button" class="category-pill-btn" data-category="Initial Training" onclick="selectTrainingCategory('Initial Training')">
+                    <span class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-graduation-cap" style="color:#2563eb;"></i>
+                      <span>
+                        <span class="d-block fw-semibold">Initial Training</span>
+                        <small class="text-muted" id="catCountInitial">การฝึกอบรมเริ่มต้น</small>
+                      </span>
+                    </span>
+                    <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
+                  </button>
+                </div>
+                <div class="col-12 col-md-6">
+                  <button type="button" class="category-pill-btn" data-category="Recurrent Training" onclick="selectTrainingCategory('Recurrent Training')">
+                    <span class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-arrows-rotate" style="color:#16a34a;"></i>
+                      <span>
+                        <span class="d-block fw-semibold">Recurrent Training</span>
+                        <small class="text-muted" id="catCountRecurrent">การฝึกอบรมทบทวนตามรอบ</small>
+                      </span>
+                    </span>
+                    <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
+                  </button>
+                </div>
+                <div class="col-12 col-md-6">
+                  <button type="button" class="category-pill-btn" data-category="Optional Training" onclick="selectTrainingCategory('Optional Training')">
+                    <span class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-book-open" style="color:#9333ea;"></i>
+                      <span>
+                        <span class="d-block fw-semibold">Optional Training</span>
+                        <small class="text-muted" id="catCountOptional">การฝึกอบรมเพิ่มเติม</small>
+                      </span>
+                    </span>
+                    <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
+                  </button>
+                </div>
+                <div class="col-12 col-md-6">
+                  <button type="button" class="category-pill-btn" data-category="Continuing Training" onclick="selectTrainingCategory('Continuing Training')">
+                    <span class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-award" style="color:#ea580c;"></i>
+                      <span>
+                        <span class="d-block fw-semibold">Continuing Training</span>
+                        <small class="text-muted" id="catCountContinuing">การพัฒนาความรู้ต่อเนื่อง</small>
+                      </span>
+                    </span>
+                    <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
+                  </button>
+                </div>
+                <div class="col-12 col-md-6">
+                  <button type="button" class="category-pill-btn" data-category="Personnel Licensing" onclick="selectTrainingCategory('Personnel Licensing')">
+                    <span class="d-flex align-items-center gap-3">
+                      <i class="fa-regular fa-id-badge" style="color:#0284c7;"></i>
+                      <span>
+                        <span class="d-block fw-semibold">Personnel Licensing</span>
+                        <small class="text-muted" id="catCountLicensing">ใบอนุญาตและคุณสมบัติบุคลากร</small>
+                      </span>
+                    </span>
+                    <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="input-group">
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                <input type="text" id="trainingSearchInput" class="form-control border-start-0 rounded-end-3 py-2" autocomplete="off" placeholder="ค้นหาชื่อหลักสูตร / ใบอนุญาต..." oninput="renderUserTraining()">
+              </div>
+            </div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <select id="trainingStatusFilter" class="form-select w-auto rounded-3" onchange="onTrainingStatusDropdownChange()">
+                <option value="all">ทุกสถานะ</option>
+                <option value="approve">อนุมัติแล้ว (Approved)</option>
+                <option value="waiting approve">รออนุมัติ (Waiting Approve)</option>
+                <option value="reject">ปฏิเสธ (Rejected)</option>
+                <option value="expiring">ใกล้หมดอายุ</option>
+              </select>
+
+              <div class="view-switcher-pill">
+                <button type="button" id="btnViewCard" class="view-switch-btn is-active" onclick="setTrainingViewMode('card')">
+                  Cards
+                </button>
+                <button type="button" id="btnViewTable" class="view-switch-btn" onclick="setTrainingViewMode('table')">
+                  Table
+                </button>
+              </div>
+            </div>
+
+            <div class="small text-muted mb-3" id="trainingResultCountText">กำลังโหลดข้อมูล...</div>
+
+            <div id="trainingCardView" class="d-flex flex-column gap-3"></div>
+
+            <div id="trainingTableView" class="table-responsive hidden">
+              <table class="table table-striped table-hover align-middle mb-0">
+                <thead class="table-light border-bottom">
+                  <tr class="small text-secondary">
+                    <th class="py-2">หลักสูตร / ใบอนุญาต</th>
+                    <th class="py-2">หมวดหมู่</th>
+                    <th class="py-2 text-nowrap">วันที่ฝึกอบรม / ออกใบอนุญาต</th>
+                    <th class="py-2 text-nowrap">วันหมดอายุ</th>
+                    <th class="py-2 text-center text-nowrap">Days left</th>
+                    <th class="py-2 text-center">สถานะ</th>
+                    <th class="py-2 text-end">รายละเอียด</th>
+                  </tr>
+                </thead>
+                <tbody id="userTrainingBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: ADD TRAINING RECORD -->
+        <div class="tab-pane fade user-only" id="tabAdd">
+          <div class="card p-4 mx-auto" style="max-width: 680px;">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-4 pb-2 border-bottom">
+              <div class="d-flex align-items-center gap-2">
+                <span class="section-icon-box bg-primary" style="width:36px;height:36px;font-size:1rem;">
+                  <i class="fa-solid fa-file-circle-plus"></i>
+                </span>
+                <h5 class="fw-bold text-dark mb-0">เพิ่มข้อมูลการฝึกอบรม</h5>
+              </div>
+              <span class="badge rounded-pill bg-primary-subtle text-primary px-3 py-2">Training Form</span>
+            </div>
+
+            <form id="addRecordForm" class="d-flex flex-column gap-3">
+              <div class="form-field-box">
+                <label class="form-label">หน่วยงานฝึกอบรม (ATO) <span class="text-danger">*</span></label>
+                <select id="addAto" class="form-select" required onchange="onAtoOrTypeChange()"></select>
+              </div>
+
+              <div class="form-field-box">
+                <label class="form-label">ประเภทการฝึกอบรม <span class="text-danger">*</span></label>
+                <select id="addType" class="form-select" required onchange="onAtoOrTypeChange()"></select>
+              </div>
+
+              <div class="form-field-box">
+                <label class="form-label">หลักสูตร / ใบอนุญาต <span class="text-danger">*</span></label>
+                <select id="addSub1" class="form-select" required onchange="onSub1Change()"></select>
+              </div>
+
+              <div>
+                <button type="button" id="btnToggleExtraSubs" class="btn btn-light border w-100 d-flex justify-content-between align-items-center py-2 px-3 rounded-3 fw-semibold text-secondary" onclick="toggleExtraSubsPanel()">
+                  <span><i class="fa-solid fa-sliders me-2 text-primary"></i>ตัวเลือกเพิ่มเติม (Sub Type 2–3)</span>
+                  <i class="fa-solid fa-chevron-down" id="extraSubsChevron"></i>
+                </button>
+              </div>
+
+              <div id="extraSubsPanel" class="extra-sub-panel hidden">
+                <div class="row g-3">
+                  <div class="col-md-6" id="sub2SelectContainer">
+                    <label class="form-label">Sub Type 2</label>
+                    <select id="addSub2Select" class="form-select bg-white"></select>
+                  </div>
+                  <div class="col-md-6 hidden" id="sub2TextContainer">
+                    <label class="form-label">ระบุชื่อหลักสูตร / รายละเอียดเพิ่มเติม</label>
+                    <input type="text" id="addSub2Text" class="form-control bg-white" placeholder="พิมพ์ชื่อหลักสูตร...">
+                  </div>
+                  <div class="col-md-6" id="sub3Container">
+                    <label class="form-label">Role / Authorization (Sub Type 3)</label>
+                    <select id="addSub3" class="form-select bg-white"></select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-field-box">
+                <label class="form-label">วันที่เริ่มมีผล (Active Date) <span class="text-danger">*</span></label>
+                <input type="date" id="addActiveDate" class="form-control" required>
+              </div>
+
+              <div class="form-field-box" id="expireDateContainer">
+                <label class="form-label">วันที่หมดอายุ (Expire Date)</label>
+                <input type="date" id="addExpireDate" class="form-control">
+              </div>
+
+              <div class="form-field-box">
+                <label class="form-label">Upload ใบรับรอง / ใบอนุญาต (PDF หรือ รูปภาพ)</label>
+                <input type="file" id="addFile" class="form-control" accept=".pdf,image/*">
+              </div>
+
+              <div class="mt-2 d-flex justify-content-end">
+                <button type="submit" id="btnSubmitRecord" class="btn btn-success px-4 py-2 fw-bold rounded-pill">
+                  <i class="fa-solid fa-paper-plane me-1"></i> ส่งข้อมูลบันทึก
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- TAB ADMIN 1: TRAINING MONITOR -->
+        <div class="tab-pane fade admin-only hidden" id="tabAdminMonitor">
+          <div class="card p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+              <div>
+                <h4 class="fw-bold text-dark mb-1">Training Monitor</h4>
+                <div class="text-muted small">ติดตามสถานะการฝึกอบรมและใบอนุญาตของบุคลากร (คลิก Initial เพื่อดูรายละเอียดรายบุคคล)</div>
+              </div>
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="clock-pill">
+                  <i class="fa-regular fa-clock text-primary"></i>
+                  <span id="liveDateDisplay">-</span>
+                  <span class="text-muted">|</span>
+                  <span id="liveTimeDisplay" style="font-variant-numeric: tabular-nums;">--:--:--</span>
+                </div>
+                <button type="button" class="btn btn-dark rounded-pill px-3 py-2 fw-semibold" onclick="loadMonitor()">
+                  <i class="fa-solid fa-rotate me-1"></i> Refresh
+                </button>
+                <a href="https://docs.google.com/spreadsheets/d/1y_0wk_q6CoRWzIO819eE4pBAwwtyWpy8HnG0cjfYVsg/edit" target="_blank" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-semibold">
+                  <i class="fa-solid fa-table me-1"></i> Google Sheet
+                </a>
+              </div>
+            </div>
+
+            <!-- การ์ดสรุป 4 ช่องแบบเดียวกับฝั่ง User -->
+            <div class="row g-3 mb-4">
+              <div class="col-6 col-lg-3">
+                <div class="summary-stat-box stat-total active-stat" data-mon-scope="all" onclick="selectMonitorScope('all')">
+                  <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
+                    <i class="fa-solid fa-users"></i>
+                    <span>บุคลากรทั้งหมด</span>
+                  </div>
+                  <div class="fs-2 fw-bold lh-1" id="monKpiUsers">0</div>
+                </div>
+              </div>
+              <div class="col-6 col-lg-3">
+                <div class="summary-stat-box stat-approved" data-mon-scope="normal" onclick="selectMonitorScope('normal')">
+                  <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
+                    <i class="fa-regular fa-circle-check"></i>
+                    <span>ใช้งานได้ (> 90 วัน)</span>
+                  </div>
+                  <div class="fs-2 fw-bold lh-1" id="monKpiNormal">0</div>
+                </div>
+              </div>
+              <div class="col-6 col-lg-3">
+                <div class="summary-stat-box stat-expiring" data-mon-scope="expiring" onclick="selectMonitorScope('expiring')">
+                  <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
+                    <i class="fa-regular fa-clock"></i>
+                    <span>ใกล้หมดอายุ (1–90 วัน)</span>
+                  </div>
+                  <div class="fs-2 fw-bold lh-1" id="monKpiExpiring">0</div>
+                </div>
+              </div>
+              <div class="col-6 col-lg-3">
+                <div class="summary-stat-box stat-expired" data-mon-scope="expired" onclick="selectMonitorScope('expired')">
+                  <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>หมดอายุแล้ว</span>
+                  </div>
+                  <div class="fs-2 fw-bold lh-1" id="monKpiExpired">0</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ตัวกรองแบบสะอาด -->
+            <div class="filter-panel mb-3">
+              <div class="row g-2 mb-2">
+                <div class="col-12 col-md-4">
+                  <label class="form-label small fw-bold mb-1">ค้นหา Initial / หลักสูตร</label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input type="text" id="monSearchInput" class="form-control" autocomplete="off" placeholder="พิมพ์ Initial Name หรือหลักสูตร..." oninput="renderMonitorView()">
+                  </div>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label class="form-label small fw-bold mb-1">Position</label>
+                  <select id="monFilterPosition" class="form-select form-select-sm" onchange="renderMonitorView()">
+                    <option value="ALL">All Positions</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label class="form-label small fw-bold mb-1">ATO</label>
+                  <select id="monFilterAto" class="form-select form-select-sm" onchange="onMonitorFilterChange()">
+                    <option value="ALL">All ATO</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label class="form-label small fw-bold mb-1">Type</label>
+                  <select id="monFilterType" class="form-select form-select-sm" onchange="onMonitorFilterChange()">
+                    <option value="ALL">All Types</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label class="form-label small fw-bold mb-1">Sub Type 1</label>
+                  <select id="monFilterSub1" class="form-select form-select-sm" onchange="onMonitorFilterChange()">
+                    <option value="ALL">All Sub 1</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row g-2">
+                <div class="col-6 col-md-3">
+                  <label class="form-label small fw-bold mb-1">Sub Type 2</label>
+                  <select id="monFilterSub2" class="form-select form-select-sm" onchange="onMonitorFilterChange()">
+                    <option value="ALL">All Sub 2</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label small fw-bold mb-1">Sub Type 3 / Role</label>
+                  <select id="monFilterSub3" class="form-select form-select-sm" onchange="renderMonitorView()">
+                    <option value="ALL">All Sub 3</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-6 d-flex align-items-end justify-content-md-end gap-2 mt-2 mt-md-0">
+                  <div class="view-switcher-pill">
+                    <button type="button" id="btnMonViewMatrix" class="view-switch-btn is-active" onclick="setMonitorSubMode('matrix')">
+                      Matrix
+                    </button>
+                    <button type="button" id="btnMonViewAlert" class="view-switch-btn" onclick="setMonitorSubMode('alert')">
+                      Action Required (<span id="monAlertBadgeCount">0</span>)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- คำอธิบายสีสถานะ -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small mb-3 px-1">
+              <div class="d-flex flex-wrap gap-3">
+                <span class="legend-dot-item"><span class="color-circle-dot" style="background:#22c55e;"></span> ใช้งานได้ (&gt; 90 วัน)</span>
+                <span class="legend-dot-item"><span class="color-circle-dot" style="background:#f59e0b;"></span> ใกล้หมดอายุ (1–90 วัน)</span>
+                <span class="legend-dot-item"><span class="color-circle-dot" style="background:#ef4444;"></span> หมดอายุแล้ว (&le; 0 วัน)</span>
+                <span class="legend-dot-item"><span class="color-circle-dot" style="background:#0ea5e9;"></span> Pass / ไม่กำหนดวันหมดอายุ</span>
+              </div>
+              <span class="text-muted" id="monitorSummaryText">กำลังโหลดข้อมูล...</span>
+            </div>
+
+            <!-- มุมมอง Matrix -->
+            <div id="monitorMatrixSection" class="border rounded-3 overflow-hidden bg-white">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-center admin-soft-table">
+                  <thead id="monitorMatrixHead">
+                    <tr>
+                      <th class="text-start ps-3">Initial Name</th>
+                    </tr>
+                  </thead>
+                  <tbody id="monitorMatrixBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- มุมมอง Action Required (เรียงตามความเร่งด่วน) -->
+            <div id="monitorAlertSection" class="hidden">
+              <div id="monitorAlertList" class="d-flex flex-column gap-2"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB ADMIN 2: DASHBOARD OVERVIEW -->
+        <div class="tab-pane fade admin-only hidden" id="tabAdminDashboard">
+          <div class="card p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+              <div>
+                <h4 class="fw-bold text-dark mb-1">Dashboard Overview</h4>
+                <div class="text-muted small">ภาพรวมรายการฝึกอบรมและใบอนุญาตแยกตามช่วงวันคงเหลือ</div>
+              </div>
+              <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-dark rounded-pill px-3 py-2 fw-semibold" onclick="loadAdminDashboard()">
+                  <i class="fa-solid fa-rotate me-1"></i> Refresh
+                </button>
+                <a href="https://docs.google.com/spreadsheets/d/1y_0wk_q6CoRWzIO819eE4pBAwwtyWpy8HnG0cjfYVsg/edit" target="_blank" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-semibold">
+                  <i class="fa-solid fa-table me-1"></i> Google Sheet
+                </a>
+              </div>
+            </div>
+
+            <!-- การ์ดสรุป 4 ช่องหลักแบบเดียวกับฝั่ง User + ป้ายย่อย -->
+            <div class="row g-3 mb-4">
+              <div class="col-6 col-lg-3">
+                <div class="summary-stat-box stat-total active-stat" data-bucket="ALL" onclick="selectDashboardBucket('ALL')">
+                  <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
+                    <i class="fa-solid fa-bars-staggered"></i>
+                    <span>รายการทั้งหมด</span>
+                  </div>
+                  <div class="fs-2 fw-bold lh-1" id="dashCountAll">0</div>
+                </div>
+              </div>
+              <div class="col-6 col-lg-3">
+                <div class="summary-stat-box stat-approved" data-bucket="NORMAL" onclick="selectDashboardBucket('NORMAL')">
+                  <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
+                    <i class="fa-regular fa-circle-check"></i>
+                    <span>ใช้งานได้ (Normal)</span>
+                  </div>
+                  <div class="fs-2 fw-bold lh-1" id="dashCountNormal">0</div>
+                </div>
+              </div>
+              <div class="col-6 col-lg-3">
+                <div class="summary-stat-box stat-expiring" data-bucket="CAUTION" onclick="selectDashboardBucket('CAUTION')">
+                  <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
+                    <i class="fa-regular fa-clock"></i>
+                    <span>ใกล้หมดอายุ (1–90d)</span>
+                  </div>
+                  <div class="fs-2 fw-bold lh-1" id="dashCountCaution">0</div>
+                </div>
+              </div>
+              <div class="col-6 col-lg-3">
+                <div class="summary-stat-box stat-expired" data-bucket="EXPIRE" onclick="selectDashboardBucket('EXPIRE')">
+                  <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>หมดอายุแล้ว (Expire)</span>
+                  </div>
+                  <div class="fs-2 fw-bold lh-1" id="dashCountExpire">0</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ตัวกรองแบบสะอาด -->
+            <div class="filter-panel mb-3">
+              <div class="row g-2">
+                <div class="col-6 col-md-2">
+                  <label class="form-label small fw-bold mb-1">Days Left</label>
+                  <div class="daysleft-dropdown-wrap" id="daysLeftCustomDropdown">
+                    <select id="dashFilterDaysLeft" class="d-none">
+                      <option value="ALL">All</option>
+                      <option value="EXPIRE">Expire</option>
+                      <option value="WARNING">Warning (≤30d)</option>
+                      <option value="CAUTION">Caution (≤90d)</option>
+                      <option value="NORMAL">Normal (&gt;90d)</option>
+                      <option value="EXEMPTED">Exempted</option>
+                      <option value="PASS">Pass</option>
+                    </select>
+                    <button type="button" id="daysLeftTriggerBtn" class="daysleft-trigger-btn" onclick="toggleDaysLeftMenu(event)">
+                      <span id="daysLeftSelectedLabel" class="d-flex align-items-center gap-2 text-truncate">
+                        <span class="color-circle-dot" style="background-color:#3b82f6;"></span>
+                        <span>All</span>
+                      </span>
+                      <i class="fa-solid fa-chevron-down small text-secondary"></i>
+                    </button>
+                    <div id="daysLeftMenuPop" class="daysleft-menu-pop hidden">
+                      <button type="button" class="daysleft-option-item" data-value="EXPIRE" onclick="pickDaysLeftOption('EXPIRE', event)">
+                        <span class="color-circle-dot" style="background-color:#ef4444;"></span>
+                        <span>Expire (&le; 0d)</span>
+                      </button>
+                      <button type="button" class="daysleft-option-item" data-value="WARNING" onclick="pickDaysLeftOption('WARNING', event)">
+                        <span class="color-circle-dot" style="background-color:#f97316;"></span>
+                        <span>Warning (1–30d)</span>
+                      </button>
+                      <button type="button" class="daysleft-option-item" data-value="CAUTION" onclick="pickDaysLeftOption('CAUTION', event)">
+                        <span class="color-circle-dot" style="background-color:#facc15;"></span>
+                        <span>Caution (31–90d)</span>
+                      </button>
+                      <button type="button" class="daysleft-option-item" data-value="NORMAL" onclick="pickDaysLeftOption('NORMAL', event)">
+                        <span class="color-circle-dot" style="background-color:#22c55e;"></span>
+                        <span>Normal (&gt; 90d)</span>
+                      </button>
+                      <button type="button" class="daysleft-option-item" data-value="EXEMPTED" onclick="pickDaysLeftOption('EXEMPTED', event)">
+                        <span class="color-circle-dot" style="background-color:#94a3b8;"></span>
+                        <span>Exempted</span>
+                      </button>
+                      <button type="button" class="daysleft-option-item" data-value="PASS" onclick="pickDaysLeftOption('PASS', event)">
+                        <i class="fa-solid fa-check text-success" style="width:12px;"></i>
+                        <span>Pass</span>
+                      </button>
+                      <button type="button" class="daysleft-option-item is-selected" data-value="ALL" onclick="pickDaysLeftOption('ALL', event)">
+                        <span class="color-circle-dot" style="background-color:#3b82f6;"></span>
+                        <span>All</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label class="form-label small fw-bold mb-1">Initial Name</label>
+                  <select id="dashFilterInitial" class="form-select form-select-sm" onchange="renderDashboardTable()">
+                    <option value="ALL">All Names</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label class="form-label small fw-bold mb-1">Type</label>
+                  <select id="dashFilterType" class="form-select form-select-sm" onchange="onDashboardCascadeChange()">
+                    <option value="ALL">All Types</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label class="form-label small fw-bold mb-1">Sub Type 1</label>
+                  <select id="dashFilterSub1" class="form-select form-select-sm" onchange="onDashboardCascadeChange()">
+                    <option value="ALL">All Sub 1</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label class="form-label small fw-bold mb-1">Sub Type 2</label>
+                  <select id="dashFilterSub2" class="form-select form-select-sm" onchange="onDashboardCascadeChange()">
+                    <option value="ALL">All Sub 2</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label class="form-label small fw-bold mb-1">Sub Type 3</label>
+                  <select id="dashFilterSub3" class="form-select form-select-sm" onchange="renderDashboardTable()">
+                    <option value="ALL">All Sub 3</option>
+                  </select>
+                </div>
+              </div>
+              <div class="d-flex flex-wrap gap-3 small text-muted mt-2 pt-2 border-top">
+                <span>Warning (1–30d): <strong id="dashCountWarning" class="text-dark">0</strong></span>
+                <span>Caution (31–90d): <strong id="dashCountCautionDetail" class="text-dark">0</strong></span>
+                <span>Exempted: <strong id="dashCountExempted" class="text-dark">0</strong></span>
+                <span>Pass: <strong id="dashCountPass" class="text-dark">0</strong></span>
+              </div>
+            </div>
+
+            <div class="border rounded-3 overflow-hidden bg-white">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small admin-soft-table">
+                  <thead>
+                    <tr>
+                      <th>Initial</th>
+                      <th>หลักสูตร / ใบอนุญาต</th>
+                      <th>หมวดหมู่</th>
+                      <th class="text-nowrap">Active Date</th>
+                      <th class="text-nowrap">Expire Date</th>
+                      <th class="text-center text-nowrap" style="cursor:pointer;" onclick="toggleDashboardSort()">
+                        Days Left <i class="fa-solid fa-sort ms-1 text-primary"></i>
+                      </th>
+                      <th class="text-center">Status</th>
+                      <th class="text-end">Evidence</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashboardTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB ADMIN 3: APPROVED -->
+        <div class="tab-pane fade admin-only hidden" id="tabAdminApprove">
+          <div class="card p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+              <div>
+                <h4 class="fw-bold text-dark mb-1">ตรวจสอบและอนุมัติรายการ</h4>
+                <div class="text-muted small">จัดการคำขออนุมัติบันทึกการฝึกอบรมและใบอนุญาตของบุคลากร</div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <select id="adminStatusFilter" class="form-select rounded-3 w-auto" onchange="renderAdminTable()">
+                  <option value="waiting approve">รออนุมัติ (Waiting Approve)</option>
+                  <option value="all">ทั้งหมด (All)</option>
+                  <option value="approve">อนุมัติแล้ว (Approved)</option>
+                  <option value="reject">ปฏิเสธ (Rejected)</option>
+                </select>
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2" onclick="loadAdminRecords()" title="รีเฟรชข้อมูล">
+                  <i class="fa-solid fa-rotate"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="border rounded-3 overflow-hidden bg-white">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small admin-soft-table">
+                  <thead>
+                    <tr>
+                      <th>Initial</th>
+                      <th>หลักสูตร / ใบอนุญาต</th>
+                      <th>หมวดหมู่</th>
+                      <th class="text-nowrap">Active</th>
+                      <th class="text-nowrap">Expire</th>
+                      <th class="text-center">File</th>
+                      <th class="text-center">Status</th>
+                      <th class="text-end">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminRecordsBody"></tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    `;
-  }).join('');
-}
+    </div>
+  </div>
 
-function openExpModal(index) {
-  const isNew = index < 0;
-  document.getElementById('expModalTitle').innerText = isNew ? 'เพิ่มประสบการณ์ทำงาน' : 'แก้ไขประสบการณ์ทำงาน';
-  document.getElementById('expEditIndex').value = index;
+  <!-- MODAL PERSONNEL DETAIL DRAWER (ADMIN MONITOR) -->
+  <div class="modal fade" id="personnelDrawerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h6 class="modal-title fw-bold mb-0" id="drawerPersonTitle">รายละเอียดบุคลากร</h6>
+            <small class="text-muted" id="drawerPersonSubtitle">-</small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="drawerPersonBody"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ปิด</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  const delBtn = document.getElementById('btnDeleteExpModal');
-  if (delBtn) delBtn.classList.toggle('hidden', isNew);
+  <!-- MODAL TRAINING DETAIL -->
+  <div class="modal fade" id="trainingDetailModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title fw-bold" id="detailModalTitle">รายละเอียดรายการ</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="detailModalBody"></div>
+        <div class="modal-footer" id="detailModalFooter">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ปิด</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  const item = !isNew && experienceItems[index]
-    ? experienceItems[index]
-    : { year: '', pos: '', name: '' };
+  <!-- MODAL EXPERIENCE -->
+  <div class="modal fade" id="expModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title fw-bold" id="expModalTitle">ประสบการณ์ทำงาน</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="expEditIndex">
+          <div class="mb-3">
+            <label class="form-label">ตำแหน่ง (Position)</label>
+            <input type="text" id="expModalPos" class="form-control" placeholder="เช่น Ground Instructor">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">หน่วยงาน / องค์กร</label>
+            <input type="text" id="expModalName" class="form-control" placeholder="เช่น Civil Aviation Training Center, Bangkok">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">ช่วงเวลา / ปี</label>
+            <input type="text" id="expModalYear" class="form-control" placeholder="เช่น 1 ต.ค. 2555 – ปัจจุบัน">
+          </div>
+        </div>
+        <div class="modal-footer justify-content-between">
+          <button type="button" id="btnDeleteExpModal" class="btn btn-outline-danger btn-sm hidden" onclick="deleteExpFromModal()">
+            <i class="fa-solid fa-trash-can me-1"></i> ลบรายการ
+          </button>
+          <div class="ms-auto d-flex gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="button" class="btn btn-success btn-sm px-3" onclick="saveExpFromModal()">บันทึก</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  document.getElementById('expModalPos').value = item.pos || '';
-  document.getElementById('expModalName').value = item.name || '';
-  document.getElementById('expModalYear').value = item.year || '';
+  <!-- MODAL EDUCATION -->
+  <div class="modal fade" id="eduModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title fw-bold">ประวัติการศึกษา</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">ระดับการศึกษา</label>
+            <select id="eduModalLevel" class="form-select" onchange="onEduModalLevelChange()">
+              <option value="bachelor">ปริญญาตรี (Bachelor)</option>
+              <option value="master">ปริญญาโท (Master)</option>
+              <option value="doctor">ปริญญาเอก (Doctorate)</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">วุฒิการศึกษา / สาขา</label>
+            <input type="text" id="eduModalDeg" class="form-control" placeholder="เช่น Master of Science (Aviation Management)">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">สถาบันการศึกษา</label>
+            <input type="text" id="eduModalUni" class="form-control" placeholder="เช่น Eastern Asia University">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ปีที่จบ / วันที่จบ</label>
+            <input type="text" id="eduModalYear" class="form-control" placeholder="เช่น 15 พ.ค. 2559">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">ไฟล์แนบวุฒิการศึกษา</label>
+            <div class="d-flex align-items-center gap-2">
+              <input type="file" id="eduModalFileInput" class="form-control form-control-sm" onchange="handleEduModalFileUpload(this)">
+            </div>
+            <input type="hidden" id="eduModalFileUrl">
+            <div class="mt-1 small" id="eduModalFileStatus"></div>
+          </div>
+        </div>
+        <div class="modal-footer justify-content-between">
+          <button type="button" id="btnClearEduModal" class="btn btn-outline-danger btn-sm hidden" onclick="clearEduFromModal()">
+            <i class="fa-solid fa-trash-can me-1"></i> ล้างข้อมูลวุฒินี้
+          </button>
+          <div class="ms-auto d-flex gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="button" class="btn btn-primary btn-sm px-3" onclick="saveEduFromModal()">บันทึกวุฒิ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  bootstrap.Modal.getOrCreateInstance(document.getElementById('expModal')).show();
+  <!-- MODAL CHANGE PASSWORD -->
+  <div class="modal fade" id="passwordModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title fw-bold">เปลี่ยนรหัสผ่านใหม่</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="password" id="newPasswordInput" class="form-control" placeholder="Password">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary btn-sm w-100" onclick="changeUserPassword()">บันทึกรหัสผ่าน</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
