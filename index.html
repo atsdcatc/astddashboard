@@ -23,8 +23,8 @@
       box-shadow: 0 20px 45px rgba(15, 23, 42, 0.16) !important;
       border: 1px solid #e2e8f0 !important;
       width: auto !important;
-      min-width: 260px;
-      max-width: 340px;
+      min-width: 280px;
+      max-width: 360px;
     }
     .atsd-spinner-wrap {
       position: relative;
@@ -62,6 +62,37 @@
     }
     @keyframes atsdSpin {
       to { transform: rotate(360deg); }
+    }
+
+    /* Progress Bar inside Loading Popup */
+    .atsd-progress-wrap {
+      width: 100%;
+      margin-top: 0.9rem;
+      text-align: left;
+    }
+    .atsd-progress-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #1d4ed8;
+      margin-bottom: 0.35rem;
+      gap: 0.5rem;
+    }
+    .atsd-progress-track {
+      width: 100%;
+      height: 8px;
+      background-color: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .atsd-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2563eb 0%, #0ea5e9 100%);
+      border-radius: 999px;
+      transition: width 0.25s ease;
     }
 
     /* พื้นหลังการ์ดสีขาว + แถบเน้นและสีไอคอน */
@@ -1192,7 +1223,7 @@
               </div>
             </div>
 
-            <!-- การ์ดสรุป 5 ช่องหลัก (เพิ่มสถานะสีฟ้า Pass ในแถวการ์ดด้านบน) -->
+            <!-- การ์ดสรุป 5 ช่องหลัก (รวมสถานะสีฟ้า Pass) -->
             <div class="row g-3 mb-4">
               <div class="col-6 col-md-4 col-lg">
                 <div class="summary-stat-box stat-total active-stat" data-bucket="ALL" onclick="selectDashboardBucket('ALL')">
