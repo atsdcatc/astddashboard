@@ -13,6 +13,8 @@ let selectedMonitorCategory = 'ALL';
 let monitorSubMode = 'matrix';
 let dashboardSortAsc = true;
 let liveClockTimer = null;
+let loadingProgressTimer = null;
+let currentLoadingPercent = 0;
 
 let experienceItems = [];
 let educationStore = {
@@ -31,7 +33,48 @@ const DAYSLEFT_META = {
   ALL:      { label: 'All',             symbol: '<span class="color-circle-dot" style="background-color:#3b82f6;"></span>' }
 };
 
-function showAppLoading(title = 'กำลังโหลดข้อมูล...', subtitle = 'กรุณารอสักครู่') {
+function stopLoadingProgressTimer() {
+  if (loadingProgressTimer) {
+    clearInterval(loadingProgressTimer);
+    loadingProgressTimer = null;
+  }
+}
+
+function updateAppLoadingProgress(percent, subtitle = null, stepLabel = null) {
+  const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+  currentLoadingPercent = clamped;
+
+  const barEl = document.getElementById('atsdProgressBar');
+  const pctEl = document.getElementById('atsdProgressPercent');
+  const stepEl = document.getElementById('atsdProgressStep');
+  const subEl = document.getElementById('atsdLoadingSubtitle');
+
+  if (barEl) barEl.style.width = `${clamped}%`;
+  if (pctEl) pctEl.innerText = `${clamped}%`;
+  if (stepLabel && stepEl) stepEl.innerText = stepLabel;
+  if (subtitle && subEl) subEl.innerText = subtitle;
+}
+
+function showAppLoading(title = 'กำลังโหลดข้อมูล...', subtitle = 'กรุณารอสักครู่', options = {}) {
+  stopLoadingProgressTimer();
+  const showProgress = Boolean(options.showProgress);
+  const initialPercent = showProgress ? (options.initialPercent ?? 8) : 0;
+  currentLoadingPercent = initialPercent;
+
+  const progressHtml = showProgress
+    ? `
+      <div class="atsd-progress-wrap">
+        <div class="atsd-progress-meta">
+          <span id="atsdProgressStep">${escapeHtml(options.stepLabel || 'กำลังเตรียมข้อมูล')}</span>
+          <span id="atsdProgressPercent">${initialPercent}%</span>
+        </div>
+        <div class="atsd-progress-track">
+          <div id="atsdProgressBar" class="atsd-progress-fill" style="width:${initialPercent}%;"></div>
+        </div>
+      </div>
+    `
+    : '';
+
   Swal.fire({
     html: `
       <div class="atsd-spinner-wrap">
@@ -39,7 +82,8 @@ function showAppLoading(title = 'กำลังโหลดข้อมูล..
         <div class="atsd-spinner-icon"><i class="fa-solid fa-plane-up"></i></div>
       </div>
       <div class="atsd-loading-title">${escapeHtml(title)}</div>
-      <div class="atsd-loading-sub">${escapeHtml(subtitle)}</div>
+      <div class="atsd-loading-sub" id="atsdLoadingSubtitle">${escapeHtml(subtitle)}</div>
+      ${progressHtml}
     `,
     showConfirmButton: false,
     allowOutsideClick: false,
@@ -52,6 +96,7 @@ function showAppLoading(title = 'กำลังโหลดข้อมูล..
 }
 
 function hideAppLoading() {
+  stopLoadingProgressTimer();
   if (Swal.isVisible()) {
     Swal.close();
   }
@@ -640,15 +685,48 @@ async function saveProfileData() {
 }
 
 async function exportPDF() {
-  showAppLoading('กำลังสร้างไฟล์ PDF...', 'จัดเตรียมเอกสารประวัติส่วนตัว');
+  showAppLoading(
+    'กำลังสร้างไฟล์ PDF...',
+    'รวบรวมข้อมูลประวัติและประสบการณ์',
+    {
+      showProgress: true,
+      initialPercent: 15,
+      stepLabel: 'ขั้นตอนที่ 1/3: เตรียมข้อมูล'
+    }
+  );
+
+  loadingProgressTimer = setInterval(() => {
+    if (currentLoadingPercent < 45) {
+      updateAppLoadingProgress(
+        currentLoadingPercent + 7,
+        'กำลังจัดหน้าเอกสารและวุฒิการศึกษา',
+        'ขั้นตอนที่ 2/3: เรนเดอร์เอกสาร'
+      );
+    } else if (currentLoadingPercent < 88) {
+      updateAppLoadingProgress(
+        currentLoadingPercent + 4,
+        'กำลังแปลงเป็นไฟล์ PDF และอัปโหลดลง Drive',
+        'ขั้นตอนที่ 3/3: สร้างไฟล์ PDF'
+      );
+    }
+  }, 350);
+
   try {
     const url = await callApi('generateInstructorProfilePDF', { userInitialName: currentUser.initialName });
+    stopLoadingProgressTimer();
+    updateAppLoadingProgress(100, 'สร้างไฟล์ PDF เสร็จสมบูรณ์', 'เสร็จสิ้น 100%');
+
+    await new Promise(resolve => setTimeout(resolve, 250));
+    hideAppLoading();
+
     Swal.fire({
       title: 'สร้างไฟล์ PDF สำเร็จ!',
       icon: 'success',
       html: `<a href="${url}" target="_blank" class="btn btn-primary mt-2"><i class="fa-solid fa-file-pdf me-1"></i> เปิดดู / ดาวน์โหลด PDF</a>`
     });
   } catch (err) {
+    stopLoadingProgressTimer();
+    hideAppLoading();
     Swal.fire('ผิดพลาด', err.message, 'error');
   }
 }
@@ -1350,7 +1428,6 @@ function renderMonitorView() {
     return true;
   });
 
-  // คำนวณ KPI แยกตามสถานะรวมถึง Pass
   let kpiNormal = 0;
   let kpiExpiring = 0;
   let kpiExpired = 0;
