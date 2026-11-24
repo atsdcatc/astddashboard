@@ -167,6 +167,7 @@
       cursor: pointer;
       transition: transform 0.15s ease, box-shadow 0.15s ease;
       user-select: none;
+      height: 100%;
     }
     .summary-stat-box:hover {
       transform: translateY(-2px);
@@ -181,6 +182,7 @@
     .stat-waiting  { background-color: #fefce8; color: #b45309; border-color: #fef08a; }
     .stat-expiring { background-color: #fff7ed; color: #c2410c; border-color: #fed7aa; }
     .stat-expired  { background-color: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+    .stat-pass     { background-color: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
 
     .category-pill-btn {
       width: 100%;
@@ -264,6 +266,17 @@
     .remain-soft-badge {
       background-color: #dcfce7;
       color: #15803d;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .remain-pass-badge {
+      background-color: #e0f2fe;
+      color: #0369a1;
       font-size: 0.8rem;
       font-weight: 700;
       padding: 0.25rem 0.6rem;
@@ -396,7 +409,7 @@
       position: absolute;
       top: calc(100% + 4px);
       left: 0;
-      min-width: 175px;
+      min-width: 185px;
       background-color: #3f444a;
       color: #ffffff;
       border-radius: 10px;
@@ -940,9 +953,9 @@
               </div>
             </div>
 
-            <!-- การ์ดสรุป 4 ช่องแบบเดียวกับฝั่ง User -->
+            <!-- การ์ดสรุป 5 ช่อง (รวมสถานะสีฟ้า Pass) -->
             <div class="row g-3 mb-4">
-              <div class="col-6 col-lg-3">
+              <div class="col-6 col-md-4 col-lg">
                 <div class="summary-stat-box stat-total active-stat" data-mon-scope="all" onclick="selectMonitorScope('all')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-solid fa-users"></i>
@@ -951,7 +964,7 @@
                   <div class="fs-2 fw-bold lh-1" id="monKpiUsers">0</div>
                 </div>
               </div>
-              <div class="col-6 col-lg-3">
+              <div class="col-6 col-md-4 col-lg">
                 <div class="summary-stat-box stat-approved" data-mon-scope="normal" onclick="selectMonitorScope('normal')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-regular fa-circle-check"></i>
@@ -960,7 +973,7 @@
                   <div class="fs-2 fw-bold lh-1" id="monKpiNormal">0</div>
                 </div>
               </div>
-              <div class="col-6 col-lg-3">
+              <div class="col-6 col-md-4 col-lg">
                 <div class="summary-stat-box stat-expiring" data-mon-scope="expiring" onclick="selectMonitorScope('expiring')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-regular fa-clock"></i>
@@ -969,13 +982,101 @@
                   <div class="fs-2 fw-bold lh-1" id="monKpiExpiring">0</div>
                 </div>
               </div>
-              <div class="col-6 col-lg-3">
+              <div class="col-6 col-md-6 col-lg">
                 <div class="summary-stat-box stat-expired" data-mon-scope="expired" onclick="selectMonitorScope('expired')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                     <span>หมดอายุแล้ว</span>
                   </div>
                   <div class="fs-2 fw-bold lh-1" id="monKpiExpired">0</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-6 col-lg">
+                <div class="summary-stat-box stat-pass" data-mon-scope="pass" onclick="selectMonitorScope('pass')">
+                  <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
+                    <i class="fa-solid fa-check-double"></i>
+                    <span>Pass / ไม่หมดอายุ</span>
+                  </div>
+                  <div class="fs-2 fw-bold lh-1" id="monKpiPass">0</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- การแบ่งหมวดหมู่ Type แบบเดียวกับฝั่ง User -->
+            <div class="mb-4">
+              <div class="fw-bold text-dark mb-2">หมวดหมู่การฝึกอบรม (Type)</div>
+              <div class="row g-2" id="monitorCategoryButtons">
+                <div class="col-12 col-md-6">
+                  <button type="button" class="category-pill-btn is-selected" data-mon-type="ALL" onclick="selectMonitorCategory('ALL')">
+                    <span class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-border-all text-primary"></i>
+                      <span>
+                        <span class="d-block fw-bold">ทั้งหมด</span>
+                        <small class="text-muted" id="monCatCountAll">0 รายการ</small>
+                      </span>
+                    </span>
+                    <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon"></i>
+                  </button>
+                </div>
+                <div class="col-12 col-md-6">
+                  <button type="button" class="category-pill-btn" data-mon-type="Initial Training" onclick="selectMonitorCategory('Initial Training')">
+                    <span class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-graduation-cap" style="color:#2563eb;"></i>
+                      <span>
+                        <span class="d-block fw-semibold">Initial Training</span>
+                        <small class="text-muted" id="monCatCountInitial">การฝึกอบรมเริ่มต้น</small>
+                      </span>
+                    </span>
+                    <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
+                  </button>
+                </div>
+                <div class="col-12 col-md-6">
+                  <button type="button" class="category-pill-btn" data-mon-type="Recurrent Training" onclick="selectMonitorCategory('Recurrent Training')">
+                    <span class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-arrows-rotate" style="color:#16a34a;"></i>
+                      <span>
+                        <span class="d-block fw-semibold">Recurrent Training</span>
+                        <small class="text-muted" id="monCatCountRecurrent">การฝึกอบรมทบทวนตามรอบ</small>
+                      </span>
+                    </span>
+                    <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
+                  </button>
+                </div>
+                <div class="col-12 col-md-6">
+                  <button type="button" class="category-pill-btn" data-mon-type="Optional Training" onclick="selectMonitorCategory('Optional Training')">
+                    <span class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-book-open" style="color:#9333ea;"></i>
+                      <span>
+                        <span class="d-block fw-semibold">Optional Training</span>
+                        <small class="text-muted" id="monCatCountOptional">การฝึกอบรมเพิ่มเติม</small>
+                      </span>
+                    </span>
+                    <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
+                  </button>
+                </div>
+                <div class="col-12 col-md-6">
+                  <button type="button" class="category-pill-btn" data-mon-type="Continuing Training" onclick="selectMonitorCategory('Continuing Training')">
+                    <span class="d-flex align-items-center gap-3">
+                      <i class="fa-solid fa-award" style="color:#ea580c;"></i>
+                      <span>
+                        <span class="d-block fw-semibold">Continuing Training</span>
+                        <small class="text-muted" id="monCatCountContinuing">การพัฒนาความรู้ต่อเนื่อง</small>
+                      </span>
+                    </span>
+                    <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
+                  </button>
+                </div>
+                <div class="col-12 col-md-6">
+                  <button type="button" class="category-pill-btn" data-mon-type="Personnel Licensing" onclick="selectMonitorCategory('Personnel Licensing')">
+                    <span class="d-flex align-items-center gap-3">
+                      <i class="fa-regular fa-id-badge" style="color:#0284c7;"></i>
+                      <span>
+                        <span class="d-block fw-semibold">Personnel Licensing</span>
+                        <small class="text-muted" id="monCatCountLicensing">ใบอนุญาตและคุณสมบัติบุคลากร</small>
+                      </span>
+                    </span>
+                    <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1004,7 +1105,7 @@
                 </div>
                 <div class="col-6 col-md-2">
                   <label class="form-label small fw-bold mb-1">Type</label>
-                  <select id="monFilterType" class="form-select form-select-sm" onchange="onMonitorFilterChange()">
+                  <select id="monFilterType" class="form-select form-select-sm" onchange="onMonitorTypeDropdownChange()">
                     <option value="ALL">All Types</option>
                   </select>
                 </div>
@@ -1091,9 +1192,9 @@
               </div>
             </div>
 
-            <!-- การ์ดสรุป 4 ช่องหลักแบบเดียวกับฝั่ง User + ป้ายย่อย -->
+            <!-- การ์ดสรุป 5 ช่องหลัก (เพิ่มสถานะสีฟ้า Pass ในแถวการ์ดด้านบน) -->
             <div class="row g-3 mb-4">
-              <div class="col-6 col-lg-3">
+              <div class="col-6 col-md-4 col-lg">
                 <div class="summary-stat-box stat-total active-stat" data-bucket="ALL" onclick="selectDashboardBucket('ALL')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-solid fa-bars-staggered"></i>
@@ -1102,7 +1203,7 @@
                   <div class="fs-2 fw-bold lh-1" id="dashCountAll">0</div>
                 </div>
               </div>
-              <div class="col-6 col-lg-3">
+              <div class="col-6 col-md-4 col-lg">
                 <div class="summary-stat-box stat-approved" data-bucket="NORMAL" onclick="selectDashboardBucket('NORMAL')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-regular fa-circle-check"></i>
@@ -1111,7 +1212,7 @@
                   <div class="fs-2 fw-bold lh-1" id="dashCountNormal">0</div>
                 </div>
               </div>
-              <div class="col-6 col-lg-3">
+              <div class="col-6 col-md-4 col-lg">
                 <div class="summary-stat-box stat-expiring" data-bucket="CAUTION" onclick="selectDashboardBucket('CAUTION')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-regular fa-clock"></i>
@@ -1120,13 +1221,22 @@
                   <div class="fs-2 fw-bold lh-1" id="dashCountCaution">0</div>
                 </div>
               </div>
-              <div class="col-6 col-lg-3">
+              <div class="col-6 col-md-6 col-lg">
                 <div class="summary-stat-box stat-expired" data-bucket="EXPIRE" onclick="selectDashboardBucket('EXPIRE')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                     <span>หมดอายุแล้ว (Expire)</span>
                   </div>
                   <div class="fs-2 fw-bold lh-1" id="dashCountExpire">0</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-6 col-lg">
+                <div class="summary-stat-box stat-pass" data-bucket="PASS" onclick="selectDashboardBucket('PASS')">
+                  <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
+                    <i class="fa-solid fa-check-double"></i>
+                    <span>Pass</span>
+                  </div>
+                  <div class="fs-2 fw-bold lh-1" id="dashCountPassCard">0</div>
                 </div>
               </div>
             </div>
@@ -1175,7 +1285,7 @@
                         <span>Exempted</span>
                       </button>
                       <button type="button" class="daysleft-option-item" data-value="PASS" onclick="pickDaysLeftOption('PASS', event)">
-                        <i class="fa-solid fa-check text-success" style="width:12px;"></i>
+                        <i class="fa-solid fa-check text-info" style="width:12px;"></i>
                         <span>Pass</span>
                       </button>
                       <button type="button" class="daysleft-option-item is-selected" data-value="ALL" onclick="pickDaysLeftOption('ALL', event)">
@@ -1220,7 +1330,7 @@
                 <span>Warning (1–30d): <strong id="dashCountWarning" class="text-dark">0</strong></span>
                 <span>Caution (31–90d): <strong id="dashCountCautionDetail" class="text-dark">0</strong></span>
                 <span>Exempted: <strong id="dashCountExempted" class="text-dark">0</strong></span>
-                <span>Pass: <strong id="dashCountPass" class="text-dark">0</strong></span>
+                <span>Pass: <strong id="dashCountPass" class="text-info">0</strong></span>
               </div>
             </div>
 
