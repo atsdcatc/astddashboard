@@ -10,7 +10,7 @@ let allAdminRecords = [];
 let monitorRawData = { users: [], records: [], db: {} };
 let monitorScopeFilter = 'all';
 let selectedMonitorCategory = 'ALL';
-let monitorSubMode = 'matrix';
+let monitorSubMode = 'full';
 let dashboardSortAsc = true;
 let liveClockTimer = null;
 let loadingProgressTimer = null;
@@ -1198,7 +1198,7 @@ async function processFileAndSubmit(fileInput, payload) {
   onAtoOrTypeChange();
 }
 
-// ================= 5. ADMIN: TRAINING MONITOR (MATRIX & ACTION REQUIRED) =================
+// ================= 5. ADMIN: TRAINING MONITOR (FULL / MATRIX / ACTION REQUIRED) =================
 function selectMonitorScope(scope) {
   monitorScopeFilter = scope || 'all';
   document.querySelectorAll('#tabAdminMonitor .summary-stat-box').forEach(box => {
@@ -1272,10 +1272,16 @@ function updateMonitorCategoryCounts() {
 }
 
 function setMonitorSubMode(mode) {
-  monitorSubMode = mode === 'alert' ? 'alert' : 'matrix';
+  if (mode === 'alert') monitorSubMode = 'alert';
+  else if (mode === 'matrix') monitorSubMode = 'matrix';
+  else monitorSubMode = 'full';
+
+  document.getElementById('btnMonViewFull')?.classList.toggle('is-active', monitorSubMode === 'full');
   document.getElementById('btnMonViewMatrix')?.classList.toggle('is-active', monitorSubMode === 'matrix');
   document.getElementById('btnMonViewAlert')?.classList.toggle('is-active', monitorSubMode === 'alert');
-  document.getElementById('monitorMatrixSection')?.classList.toggle('hidden', monitorSubMode !== 'matrix');
+
+  const isTableMode = monitorSubMode === 'full' || monitorSubMode === 'matrix';
+  document.getElementById('monitorMatrixSection')?.classList.toggle('hidden', !isTableMode);
   document.getElementById('monitorAlertSection')?.classList.toggle('hidden', monitorSubMode !== 'alert');
   renderMonitorView();
 }
@@ -1456,32 +1462,46 @@ function renderMonitorView() {
   document.getElementById('monAlertBadgeCount').innerText = urgentRecs.length;
 
   const scopedRecs = contextRecs.filter(r => matchesMonitorScope(r, monitorScopeFilter));
+  const usersWithDataSet = new Set(
+    scopedRecs.map(r => String(r.initialName || '').trim().toLowerCase())
+  );
+  const matrixUsers = monitorSubMode === 'matrix'
+    ? filteredUsers.filter(u => usersWithDataSet.has(String(u.initialName || '').trim().toLowerCase()))
+    : filteredUsers;
+
   const summaryEl = document.getElementById('monitorSummaryText');
   if (summaryEl) {
-    summaryEl.innerText = `แสดง ${filteredUsers.length} บุคลากร · ${scopedRecs.length} รายการ · Pass ${kpiPass} รายการ · ต้องติดตาม ${urgentRecs.length} รายการ`;
+    summaryEl.innerText = `แสดง ${matrixUsers.length} บุคลากร · ${scopedRecs.length} รายการ · Pass ${kpiPass} รายการ · ต้องติดตาม ${urgentRecs.length} รายการ`;
   }
 
   if (monitorSubMode === 'alert') {
     renderMonitorAlertList(urgentRecs);
   } else {
-    renderMonitorMatrix(filteredUsers, scopedRecs, sub1Filter);
+    renderMonitorMatrix(matrixUsers, scopedRecs, sub1Filter, monitorSubMode);
   }
 }
 
-function renderMonitorMatrix(filteredUsers, scopedRecs, sub1Filter) {
+function renderMonitorMatrix(filteredUsers, scopedRecs, sub1Filter, mode = 'full') {
   const headEl = document.getElementById('monitorMatrixHead');
   const bodyEl = document.getElementById('monitorMatrixBody');
   if (!headEl || !bodyEl) return;
 
   const norm = v => String(v || '').trim().toLowerCase();
+  const visibleUserSet = new Set(filteredUsers.map(u => norm(u.initialName)));
+  const visibleRecs = scopedRecs.filter(r => visibleUserSet.has(norm(r.initialName)));
 
   let columnHeaders = [];
   if (sub1Filter !== 'ALL') {
     columnHeaders = [sub1Filter];
   } else {
     columnHeaders = [...new Set(
-      scopedRecs.map(r => String(r.sub1 || '').trim()).filter(Boolean)
+      visibleRecs.map(r => String(r.sub1 || '').trim()).filter(Boolean)
     )].sort((a, b) => a.localeCompare(b));
+  }
+
+  if (mode === 'matrix' && sub1Filter === 'ALL') {
+    const activeColSet = new Set(visibleRecs.map(r => norm(r.sub1)).filter(Boolean));
+    columnHeaders = columnHeaders.filter(col => activeColSet.has(norm(col)));
   }
 
   headEl.innerHTML = `
@@ -1498,7 +1518,7 @@ function renderMonitorMatrix(filteredUsers, scopedRecs, sub1Filter) {
 
   bodyEl.innerHTML = filteredUsers.map(u => {
     const userName = String(u.initialName || '').trim();
-    const userRecs = scopedRecs.filter(r => norm(r.initialName) === norm(userName));
+    const userRecs = visibleRecs.filter(r => norm(r.initialName) === norm(userName));
 
     const cells = columnHeaders.map(colName => {
       const matched = userRecs.filter(r => norm(r.sub1) === norm(colName));
