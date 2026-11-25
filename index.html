@@ -415,6 +415,43 @@
       border-color: #f1f5f9 !important;
       vertical-align: middle;
     }
+
+    /* Sticky Header & Sticky Initial Column for Monitor Matrix */
+    .monitor-matrix-scroll {
+      max-height: 65vh;
+      overflow: auto;
+      position: relative;
+    }
+    .monitor-matrix-scroll .admin-soft-table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .monitor-matrix-scroll .admin-soft-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background-color: #f8fafc !important;
+      box-shadow: inset 0 -1px 0 #e2e8f0;
+    }
+    .monitor-matrix-scroll .admin-soft-table tbody td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 10;
+      background-color: #ffffff;
+      box-shadow: inset -1px 0 0 #e2e8f0;
+    }
+    .monitor-matrix-scroll .admin-soft-table tbody tr:hover td:first-child {
+      background-color: #f8fafc;
+    }
+    .monitor-matrix-scroll .admin-soft-table thead th:first-child {
+      position: sticky;
+      top: 0;
+      left: 0;
+      z-index: 30;
+      background-color: #f8fafc !important;
+      box-shadow: inset -1px 0 0 #e2e8f0, inset 0 -1px 0 #e2e8f0;
+    }
+
     .initial-link-btn {
       border: none;
       background: transparent;
@@ -1202,7 +1239,7 @@
             </div>
 
             <div id="monitorMatrixSection" class="border rounded-3 overflow-hidden bg-white">
-              <div class="table-responsive">
+              <div class="table-responsive monitor-matrix-scroll">
                 <table class="table table-hover align-middle mb-0 text-center admin-soft-table">
                   <thead id="monitorMatrixHead">
                     <tr>
