@@ -1473,16 +1473,15 @@ function renderMonitorMatrix(filteredUsers, scopedRecs, sub1Filter) {
   const bodyEl = document.getElementById('monitorMatrixBody');
   if (!headEl || !bodyEl) return;
 
+  const norm = v => String(v || '').trim().toLowerCase();
+
   let columnHeaders = [];
   if (sub1Filter !== 'ALL') {
     columnHeaders = [sub1Filter];
   } else {
-    const availableOpts = [...(document.getElementById('monFilterSub1')?.options || [])]
-      .map(o => o.value)
-      .filter(v => v !== 'ALL');
-    columnHeaders = availableOpts.length > 0
-      ? availableOpts
-      : [...new Set(scopedRecs.map(r => String(r.sub1 || '').trim()).filter(Boolean))].sort();
+    columnHeaders = [...new Set(
+      scopedRecs.map(r => String(r.sub1 || '').trim()).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b));
   }
 
   headEl.innerHTML = `
@@ -1492,17 +1491,17 @@ function renderMonitorMatrix(filteredUsers, scopedRecs, sub1Filter) {
     </tr>
   `;
 
-  if (filteredUsers.length === 0) {
-    bodyEl.innerHTML = `<tr><td colspan="${columnHeaders.length + 1}" class="py-4 text-muted">ไม่พบรายชื่อบุคลากร</td></tr>`;
+  if (filteredUsers.length === 0 || columnHeaders.length === 0) {
+    bodyEl.innerHTML = `<tr><td colspan="${columnHeaders.length + 1}" class="py-4 text-muted">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</td></tr>`;
     return;
   }
 
   bodyEl.innerHTML = filteredUsers.map(u => {
     const userName = String(u.initialName || '').trim();
-    const userRecs = scopedRecs.filter(r => String(r.initialName || '').trim() === userName);
+    const userRecs = scopedRecs.filter(r => norm(r.initialName) === norm(userName));
 
     const cells = columnHeaders.map(colName => {
-      const matched = userRecs.filter(r => String(r.sub1 || '').trim() === colName);
+      const matched = userRecs.filter(r => norm(r.sub1) === norm(colName));
       if (matched.length === 0) {
         return '<td class="text-muted">—</td>';
       }
