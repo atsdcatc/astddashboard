@@ -23,8 +23,29 @@ let educationStore = {
   doctor:   { year: '', deg: '', uni: '', file: '' }
 };
 
+// 5-State Attachment States
+let addAttachState = {
+  status: 'none', // 'none' | 'pending' | 'uploading' | 'uploaded' | 'failed'
+  file: null,
+  fileName: '',
+  fileSize: 0,
+  url: '',
+  progress: 0,
+  errorMsg: ''
+};
+
+let eduAttachState = {
+  status: 'none', // 'none' | 'pending' | 'uploading' | 'uploaded' | 'failed'
+  file: null,
+  fileName: '',
+  fileSize: 0,
+  url: '',
+  progress: 0,
+  errorMsg: ''
+};
+
 const DAYSLEFT_META = {
-  EXPIRE:   { label: 'Expire (≤ 0d)',  symbol: '<span class="color-circle-dot" style="background-color:#ef4444;"></span>' },
+  EXPIRE:   { label: 'Expire ( 0d)',  symbol: '<span class="color-circle-dot" style="background-color:#ef4444;"></span>' },
   WARNING:  { label: 'Warning (1–30d)', symbol: '<span class="color-circle-dot" style="background-color:#f97316;"></span>' },
   CAUTION:  { label: 'Caution (31–90d)',symbol: '<span class="color-circle-dot" style="background-color:#facc15;"></span>' },
   NORMAL:   { label: 'Normal (> 90d)',  symbol: '<span class="color-circle-dot" style="background-color:#22c55e;"></span>' },
@@ -55,7 +76,7 @@ function updateAppLoadingProgress(percent, subtitle = null, stepLabel = null) {
   if (subtitle && subEl) subEl.innerText = subtitle;
 }
 
-function showAppLoading(title = 'กำลังโหลดข้อมูล...', subtitle = 'กรุณารอสักครู่', options = {}) {
+function showAppLoading(title = 'กำลังดำเนินการ...', subtitle = '', options = {}) {
   stopLoadingProgressTimer();
   const showProgress = Boolean(options.showProgress);
   const initialPercent = showProgress ? (options.initialPercent ?? 8) : 0;
@@ -65,7 +86,7 @@ function showAppLoading(title = 'กำลังโหลดข้อมูล..
     ? `
       <div class="atsd-progress-wrap">
         <div class="atsd-progress-meta">
-          <span id="atsdProgressStep">${escapeHtml(options.stepLabel || 'กำลังเตรียมข้อมูล')}</span>
+          <span id="atsdProgressStep">${escapeHtml(options.stepLabel || '')}</span>
           <span id="atsdProgressPercent">${initialPercent}%</span>
         </div>
         <div class="atsd-progress-track">
@@ -137,6 +158,318 @@ function setActiveTab(buttonId, paneId) {
   }
   if (targetPane) {
     targetPane.classList.add('active', 'show');
+  }
+}
+
+// ================= FILE ATTACHMENT CARD (5 STATES) =================
+function formatFileSizeText(bytes) {
+  const n = Number(bytes) || 0;
+  if (n <= 0) return '';
+  if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} KB`;
+  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function getFileTypeMeta(fileName, url = '') {
+  const target = String(fileName || url || '').toLowerCase();
+  if (target.endsWith('.pdf') || target.includes('pdf')) {
+    return { badgeText: 'PDF', badgeClass: 'attach-type-pdf', desc: 'PDF Document' };
+  }
+  if (/\.(png|jpe?g|gif|webp)(\?|$)/.test(target)) {
+    return { badgeText: 'IMG', badgeClass: 'attach-type-img', desc: 'Image File' };
+  }
+  return { badgeText: 'DOC', badgeClass: 'attach-type-doc', desc: 'Document' };
+}
+
+function getAttachStatusSummaryHtml(state) {
+  if (state.status === 'pending') {
+    return '<span class="attach-status-pending"><i class="fa-regular fa-clock me-1"></i>รอการบันทึก</span>';
+  }
+  if (state.status === 'uploading') {
+    return `<span class="attach-status-uploading"><i class="fa-solid fa-cloud-arrow-up me-1"></i>กำลังอัปโหลด ${state.progress}%</span>`;
+  }
+  if (state.status === 'uploaded') {
+    return '<span class="attach-status-uploaded"><i class="fa-regular fa-circle-check me-1"></i>อัปโหลดสำเร็จ</span>';
+  }
+  if (state.status === 'failed') {
+    return '<span class="attach-status-failed"><i class="fa-solid fa-circle-exclamation me-1"></i>อัปโหลดไม่สำเร็จ</span>';
+  }
+  return '<span class="attach-status-none"><i class="fa-regular fa-file me-1"></i>ยังไม่มีเอกสารแนบ</span>';
+}
+
+function buildAttachCardHtml(state, cfg) {
+  if (state.status === 'none') {
+    return `
+      <div class="attach-dropzone" onclick="document.getElementById('${cfg.inputId}').click()">
+        <div class="attach-cloud-circle"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+        <div class="fw-bold text-dark small">แตะเพื่อเลือกไฟล์</div>
+        <div class="text-muted small mt-1">${escapeHtml(cfg.hintText)}</div>
+        <div class="mt-2">
+          <span class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold">
+            <i class="fa-solid fa-plus me-1"></i>เลือกไฟล์เอกสาร
+          </span>
+        </div>
+      </div>
+    `;
+  }
+
+  const meta = getFileTypeMeta(state.fileName, state.url);
+  const sizeText = formatFileSizeText(state.fileSize);
+  const infoLine = [meta.desc, sizeText].filter(Boolean).join(' · ');
+
+  let statusLineHtml = '';
+  let actionRowHtml = '';
+
+  if (state.status === 'pending') {
+    statusLineHtml = '<div class="attach-status-pending mt-1"><i class="fa-regular fa-clock me-1"></i>รอการบันทึก</div>';
+    actionRowHtml = `
+      <div class="d-flex align-items-center gap-2 mt-3 pt-2 border-top">
+        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold flex-grow-1" onclick="${cfg.onUploadFn}()">
+          <i class="fa-solid fa-cloud-arrow-up me-1"></i>อัปโหลด
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger rounded-circle" style="width:32px;height:32px;" title="ยกเลิกไฟล์" onclick="${cfg.onRemoveFn}()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    `;
+  } else if (state.status === 'uploading') {
+    statusLineHtml = '<div class="attach-status-uploading mt-1">กำลังอัปโหลดเอกสาร...</div>';
+    actionRowHtml = `
+      <div class="mt-3">
+        <div class="d-flex justify-content-between small fw-bold text-primary mb-1">
+          <span>Uploading...</span>
+          <span>${state.progress}%</span>
+        </div>
+        <div class="progress" style="height:7px;">
+          <div class="progress-bar bg-primary" style="width:${state.progress}%;"></div>
+        </div>
+      </div>
+    `;
+  } else if (state.status === 'uploaded') {
+    statusLineHtml = '<div class="attach-status-uploaded mt-1"><i class="fa-regular fa-circle-check me-1"></i>อัปโหลดสำเร็จ</div>';
+    const viewBtn = state.url
+      ? `<a href="${escapeAttr(state.url)}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold"><i class="fa-regular fa-eye me-1"></i>ดูไฟล์</a>`
+      : '';
+    actionRowHtml = `
+      <div class="d-flex flex-wrap align-items-center gap-2 mt-3 pt-2 border-top">
+        ${viewBtn}
+        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" onclick="document.getElementById('${cfg.inputId}').click()">
+          <i class="fa-solid fa-rotate me-1"></i>เปลี่ยนไฟล์
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold ms-auto" onclick="${cfg.onRemoveFn}()">
+          <i class="fa-regular fa-trash-can me-1"></i>ลบ
+        </button>
+      </div>
+    `;
+  } else if (state.status === 'failed') {
+    statusLineHtml = `
+      <div class="attach-status-failed mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>อัปโหลดไม่สำเร็จ</div>
+      <div class="small text-danger mt-1">${escapeHtml(state.errorMsg || 'ไม่สามารถอัปโหลดไฟล์ได้ กรุณาลองใหม่อีกครั้ง')}</div>
+    `;
+    actionRowHtml = `
+      <div class="mt-3 pt-2 border-top">
+        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill w-100 fw-semibold" onclick="${cfg.onRetryFn}()">
+          <i class="fa-solid fa-rotate me-1"></i>ลองอีกครั้ง
+        </button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="attach-file-panel">
+      <div class="d-flex align-items-start gap-3">
+        <span class="attach-type-badge ${meta.badgeClass}">${meta.badgeText}</span>
+        <div class="flex-grow-1 min-w-0">
+          <div class="fw-bold text-dark text-break">${escapeHtml(state.fileName || 'Attached_Document')}</div>
+          ${infoLine ? `<div class="small text-muted">${escapeHtml(infoLine)}</div>` : ''}
+          ${statusLineHtml}
+        </div>
+      </div>
+      ${actionRowHtml}
+    </div>
+  `;
+}
+
+// --- Add Record Attachment ---
+function renderAddFileCard() {
+  const container = document.getElementById('addFileCardContainer');
+  const badge = document.getElementById('addAttachTopBadge');
+  if (badge) badge.innerHTML = getAttachStatusSummaryHtml(addAttachState);
+  if (!container) return;
+
+  container.innerHTML = buildAttachCardHtml(addAttachState, {
+    inputId: 'addFile',
+    hintText: 'ใบรับรองการฝึกอบรม / ใบอนุญาต · PDF, JPG, PNG',
+    onUploadFn: 'uploadAddFileNow',
+    onRemoveFn: 'removeAddFile',
+    onRetryFn: 'uploadAddFileNow'
+  });
+}
+
+function resetAddFileCard() {
+  const inp = document.getElementById('addFile');
+  if (inp) inp.value = '';
+  addAttachState = { status: 'none', file: null, fileName: '', fileSize: 0, url: '', progress: 0, errorMsg: '' };
+  renderAddFileCard();
+}
+
+function handleAddFileSelected(input) {
+  if (!input.files || !input.files[0]) return;
+  const f = input.files[0];
+  addAttachState = {
+    status: 'pending',
+    file: f,
+    fileName: f.name,
+    fileSize: f.size,
+    url: '',
+    progress: 0,
+    errorMsg: ''
+  };
+  renderAddFileCard();
+}
+
+function removeAddFile() {
+  resetAddFileCard();
+}
+
+async function uploadAddFileNow() {
+  if (!addAttachState.file) return;
+  const sub1 = document.getElementById('addSub1')?.value || 'Record';
+  const cleanFileName = `${currentUser.initialName}_${sub1}_${addAttachState.fileName}`;
+
+  addAttachState.status = 'uploading';
+  addAttachState.progress = 20;
+  addAttachState.errorMsg = '';
+  renderAddFileCard();
+
+  const timer = setInterval(() => {
+    if (addAttachState.status === 'uploading' && addAttachState.progress < 85) {
+      addAttachState.progress += 15;
+      renderAddFileCard();
+    }
+  }, 250);
+
+  try {
+    const base64 = await readFileAsBase64(addAttachState.file);
+    const uploadRes = await callApi('uploadFileToDrive', {
+      base64Data: base64,
+      fileName: cleanFileName,
+      colIndex: null,
+      rowIndex: null,
+      sheetType: 'record',
+      isImage: false
+    });
+    clearInterval(timer);
+    if (!uploadRes.success) throw new Error(uploadRes.message || 'อัปโหลดไม่สำเร็จ');
+
+    addAttachState.status = 'uploaded';
+    addAttachState.progress = 100;
+    addAttachState.url = uploadRes.url;
+    renderAddFileCard();
+    return uploadRes.url;
+  } catch (err) {
+    clearInterval(timer);
+    addAttachState.status = 'failed';
+    addAttachState.errorMsg = err.message;
+    renderAddFileCard();
+    throw err;
+  }
+}
+
+// --- Education Attachment ---
+function renderEduFileCard() {
+  const container = document.getElementById('eduModalFileCardContainer');
+  if (!container) return;
+
+  container.innerHTML = buildAttachCardHtml(eduAttachState, {
+    inputId: 'eduModalFileInput',
+    hintText: 'เอกสารหลักฐานการศึกษา · PDF, JPG, PNG',
+    onUploadFn: 'uploadEduFileNow',
+    onRemoveFn: 'removeEduFile',
+    onRetryFn: 'uploadEduFileNow'
+  });
+}
+
+function syncEduFileStateFromUrl(url) {
+  const inp = document.getElementById('eduModalFileInput');
+  if (inp) inp.value = '';
+  if (url) {
+    eduAttachState = {
+      status: 'uploaded',
+      file: null,
+      fileName: 'Education_Document',
+      fileSize: 0,
+      url,
+      progress: 100,
+      errorMsg: ''
+    };
+  } else {
+    eduAttachState = { status: 'none', file: null, fileName: '', fileSize: 0, url: '', progress: 0, errorMsg: '' };
+  }
+  renderEduFileCard();
+}
+
+function handleEduModalFileSelected(input) {
+  if (!input.files || !input.files[0]) return;
+  const f = input.files[0];
+  eduAttachState = {
+    status: 'pending',
+    file: f,
+    fileName: f.name,
+    fileSize: f.size,
+    url: document.getElementById('eduModalFileUrl')?.value || '',
+    progress: 0,
+    errorMsg: ''
+  };
+  renderEduFileCard();
+}
+
+function removeEduFile() {
+  document.getElementById('eduModalFileUrl').value = '';
+  syncEduFileStateFromUrl('');
+}
+
+async function uploadEduFileNow() {
+  if (!eduAttachState.file) return;
+  const level = document.getElementById('eduModalLevel').value;
+  const colIndex = level === 'bachelor' ? 29 : (level === 'master' ? 33 : 37);
+  const row = Number(document.getElementById('bgRow').value) || null;
+
+  eduAttachState.status = 'uploading';
+  eduAttachState.progress = 20;
+  eduAttachState.errorMsg = '';
+  renderEduFileCard();
+
+  const timer = setInterval(() => {
+    if (eduAttachState.status === 'uploading' && eduAttachState.progress < 85) {
+      eduAttachState.progress += 15;
+      renderEduFileCard();
+    }
+  }, 250);
+
+  try {
+    const base64 = await readFileAsBase64(eduAttachState.file);
+    const res = await callApi('uploadFileToDrive', {
+      base64Data: base64,
+      fileName: `${currentUser.initialName}_${level}_${eduAttachState.fileName}`,
+      colIndex,
+      rowIndex: row,
+      sheetType: 'bg',
+      isImage: false
+    });
+    clearInterval(timer);
+    if (!res.success) throw new Error(res.message || 'อัปโหลดไม่สำเร็จ');
+
+    document.getElementById('eduModalFileUrl').value = res.url;
+    eduAttachState.status = 'uploaded';
+    eduAttachState.progress = 100;
+    eduAttachState.url = res.url;
+    renderEduFileCard();
+  } catch (err) {
+    clearInterval(timer);
+    eduAttachState.status = 'failed';
+    eduAttachState.errorMsg = err.message;
+    renderEduFileCard();
+    Swal.fire('Error', err.message, 'error');
   }
 }
 
@@ -282,7 +615,7 @@ function renderExperienceTimeline() {
   if (addBtn) addBtn.disabled = experienceItems.length >= MAX_EXPERIENCE;
 
   if (experienceItems.length === 0) {
-    container.innerHTML = '<div class="text-muted small py-2">ยังไม่มีข้อมูลประสบการณ์ทำงาน กด "+ เพิ่ม" เพื่อเพิ่มรายการ</div>';
+    container.innerHTML = '<div class="text-muted small py-2">กดปุ่ม "+ เพิ่มประสบการณ์" เพื่อบันทึกข้อมูล</div>';
     return;
   }
 
@@ -304,7 +637,7 @@ function renderExperienceTimeline() {
           </div>
           <div class="d-flex align-items-center gap-2 flex-shrink-0">
             ${currentBadge}
-            <button type="button" class="btn btn-link text-secondary p-1" title="แก้ไขรายการนี้" onclick="openExpModal(${idx})">
+            <button type="button" class="btn btn-link text-secondary p-1" title="แก้ไข" onclick="openExpModal(${idx})">
               <i class="fa-solid fa-pen"></i>
             </button>
           </div>
@@ -316,7 +649,7 @@ function renderExperienceTimeline() {
 
 function openExpModal(index) {
   const isNew = index < 0;
-  document.getElementById('expModalTitle').innerText = isNew ? 'เพิ่มประสบการณ์ทำงาน' : 'แก้ไขประสบการณ์ทำงาน';
+  document.getElementById('expModalTitle').innerText = isNew ? 'เพิ่มประสบการณ์การทำงาน' : 'แก้ไขประสบการณ์การทำงาน';
   document.getElementById('expEditIndex').value = index;
 
   const delBtn = document.getElementById('btnDeleteExpModal');
@@ -348,7 +681,7 @@ function saveExpFromModal() {
     experienceItems[idx] = entry;
   } else {
     if (experienceItems.length >= MAX_EXPERIENCE) {
-      return Swal.fire('ครบจำนวนสูงสุดแล้ว', `เพิ่มได้สูงสุด ${MAX_EXPERIENCE} รายการ`, 'info');
+      return Swal.fire('แจ้งเตือน', `บันทึกได้สูงสุด ${MAX_EXPERIENCE} รายการ`, 'info');
     }
     experienceItems.push(entry);
   }
@@ -396,22 +729,22 @@ function renderEducationSection() {
   if (!container) return;
 
   const levels = [
-    { key: 'doctor',   thTitle: 'ปริญญาเอก', badgeText: 'Doctorate' },
-    { key: 'master',   thTitle: 'ปริญญาโท', badgeText: 'Master' },
-    { key: 'bachelor', thTitle: 'ปริญญาตรี', badgeText: 'Bachelor' }
+    { key: 'doctor',   thTitle: 'ปริญญาเอก (Doctor)', badgeText: 'Doctorate' },
+    { key: 'master',   thTitle: 'ปริญญาโท (Master)', badgeText: 'Master' },
+    { key: 'bachelor', thTitle: 'ปริญญาตรี (Bachelor)', badgeText: 'Bachelor' }
   ].filter(item => hasEduContent(educationStore[item.key]));
 
-  if (badge) badge.innerText = `${levels.length} รายการ`;
+  if (badge) badge.innerText = `${levels.length} วุฒิ`;
 
   if (levels.length === 0) {
-    container.innerHTML = '<div class="text-muted small">ยังไม่มีข้อมูลวุฒิการศึกษา กด "+ เพิ่มวุฒิการศึกษา" เพื่อเพิ่มข้อมูล</div>';
+    container.innerHTML = '<div class="text-muted small">กดปุ่ม "+ เพิ่ม / แก้ไขวุฒิการศึกษา" เพื่อบันทึกข้อมูล</div>';
     return;
   }
 
   container.innerHTML = levels.map(item => {
     const d = educationStore[item.key];
     const docLink = d.file
-      ? `<a href="${escapeAttr(d.file)}" target="_blank" class="doc-available-tag" onclick="event.stopPropagation();"><i class="fa-solid fa-file-circle-check me-1"></i>เอกสาร</a>`
+      ? `<a href="${escapeAttr(d.file)}" target="_blank" class="doc-available-tag" onclick="event.stopPropagation();"><i class="fa-solid fa-file-circle-check me-1"></i>ดูเอกสาร</a>`
       : '';
 
     return `
@@ -439,7 +772,6 @@ function openEduModal(preselectLevel = null) {
     const emptyLevel = ['bachelor', 'master', 'doctor'].find(k => !hasEduContent(educationStore[k]));
     levelSel.value = emptyLevel || 'bachelor';
   }
-  document.getElementById('eduModalFileInput').value = '';
   onEduModalLevelChange();
   bootstrap.Modal.getOrCreateInstance(document.getElementById('eduModal')).show();
 }
@@ -453,12 +785,7 @@ function onEduModalLevelChange() {
   document.getElementById('eduModalYear').value = d.year || '';
   document.getElementById('eduModalFileUrl').value = d.file || '';
 
-  const statusEl = document.getElementById('eduModalFileStatus');
-  if (statusEl) {
-    statusEl.innerHTML = d.file
-      ? `<span class="text-success"><i class="fa-solid fa-check-circle me-1"></i>มีไฟล์แนบแล้ว (<a href="${escapeAttr(d.file)}" target="_blank">เปิดดู</a>)</span>`
-      : '<span class="text-muted">ยังไม่มีไฟล์แนบ</span>';
-  }
+  syncEduFileStateFromUrl(d.file || '');
 
   const clearBtn = document.getElementById('btnClearEduModal');
   if (clearBtn) {
@@ -466,47 +793,24 @@ function onEduModalLevelChange() {
   }
 }
 
-async function handleEduModalFileUpload(input) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-  const level = document.getElementById('eduModalLevel').value;
-  const colIndex = level === 'bachelor' ? 29 : (level === 'master' ? 33 : 37);
-  const row = Number(document.getElementById('bgRow').value) || null;
-
-  showAppLoading('กำลังอัปโหลดเอกสาร...', 'บันทึกไฟล์แนบวุฒิการศึกษาลง Drive');
-  try {
-    const base64 = await readFileAsBase64(file);
-    const res = await callApi('uploadFileToDrive', {
-      base64Data: base64,
-      fileName: `${currentUser.initialName}_${level}_${file.name}`,
-      colIndex,
-      rowIndex: row,
-      sheetType: 'bg',
-      isImage: false
-    });
-    hideAppLoading();
-    if (res.success) {
-      document.getElementById('eduModalFileUrl').value = res.url;
-      document.getElementById('eduModalFileStatus').innerHTML =
-        `<span class="text-success"><i class="fa-solid fa-check-circle me-1"></i>อัปโหลดไฟล์เรียบร้อยแล้ว</span>`;
-    } else {
-      Swal.fire('ผิดพลาด', res.message, 'error');
-    }
-  } catch (err) {
-    hideAppLoading();
-    Swal.fire('Error', err.message, 'error');
-  }
-}
-
-function saveEduFromModal() {
+async function saveEduFromModal() {
   const key = document.getElementById('eduModalLevel').value;
   const deg = document.getElementById('eduModalDeg').value.trim();
   const uni = document.getElementById('eduModalUni').value.trim();
   const year = document.getElementById('eduModalYear').value.trim();
-  const file = document.getElementById('eduModalFileUrl').value.trim();
+  let file = document.getElementById('eduModalFileUrl').value.trim();
 
   if (!deg && !uni && !year) {
-    return Swal.fire('แจ้งเตือน', 'กรุณากรอกวุฒิการศึกษา สถาบัน หรือปีที่จบ', 'warning');
+    return Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูลวุฒิการศึกษาอย่างน้อย 1 ช่อง', 'warning');
+  }
+
+  if (eduAttachState.status === 'pending' && eduAttachState.file) {
+    try {
+      await uploadEduFileNow();
+      file = document.getElementById('eduModalFileUrl').value.trim();
+    } catch (err) {
+      return;
+    }
   }
 
   educationStore[key] = { deg, uni, year, file };
@@ -523,7 +827,7 @@ function clearEduFromModal() {
 
 async function loadProfileData() {
   if (!currentUser || currentUser.role === 'admin') return;
-  showAppLoading('กำลังโหลดข้อมูลประวัติ...', 'ดึงข้อมูลจากระบบ ATSD CATC');
+  showAppLoading('กำลังโหลดข้อมูล...', 'ATSD CATC');
   experienceItems = [];
   educationStore = {
     bachelor: { year: '', deg: '', uni: '', file: '' },
@@ -611,7 +915,7 @@ async function handleBgPicUpload(input) {
   const file = input.files[0];
   const row = Number(document.getElementById('bgRow').value) || null;
 
-  showAppLoading('กำลังอัปโหลดรูปภาพ...', 'บันทึกรูปโปรไฟล์ลงระบบ');
+  showAppLoading('กำลังอัปโหลดรูปภาพ...', '');
   try {
     const base64 = await readFileAsBase64(file);
     const res = await callApi('uploadFileToDrive', {
@@ -666,7 +970,7 @@ async function saveProfileData() {
     }
   };
 
-  showAppLoading('กำลังบันทึกข้อมูล...', 'อัปเดตประวัติส่วนตัวของคุณ');
+  showAppLoading('กำลังบันทึกข้อมูล...', '');
   try {
     const res = await callApi('updateBackgroundData', { row, d: payload });
     hideAppLoading();
@@ -674,9 +978,9 @@ async function saveProfileData() {
       if (res.row) {
         document.getElementById('bgRow').value = res.row;
       }
-      Swal.fire('บันทึกสำเร็จ', 'อัปเดตข้อมูลประวัติส่วนตัวเรียบร้อยแล้ว', 'success');
+      Swal.fire('สำเร็จ', 'บันทึกข้อมูลประวัติส่วนตัวเรียบร้อยแล้ว', 'success');
     } else {
-      Swal.fire('เกิดข้อผิดพลาด', res.message, 'error');
+      Swal.fire('ผิดพลาด', res.message, 'error');
     }
   } catch (err) {
     hideAppLoading();
@@ -687,11 +991,11 @@ async function saveProfileData() {
 async function exportPDF() {
   showAppLoading(
     'กำลังสร้างไฟล์ PDF...',
-    'รวบรวมข้อมูลประวัติและประสบการณ์',
+    'กรุณารอสักครู่',
     {
       showProgress: true,
       initialPercent: 15,
-      stepLabel: 'ขั้นตอนที่ 1/3: เตรียมข้อมูล'
+      stepLabel: 'ขั้นตอน 1/3: เตรียมข้อมูล'
     }
   );
 
@@ -699,14 +1003,14 @@ async function exportPDF() {
     if (currentLoadingPercent < 45) {
       updateAppLoadingProgress(
         currentLoadingPercent + 7,
-        'กำลังจัดหน้าเอกสารและวุฒิการศึกษา',
-        'ขั้นตอนที่ 2/3: เรนเดอร์เอกสาร'
+        'กำลังดึงข้อมูลประวัติและการฝึกอบรม',
+        'ขั้นตอน 2/3: ประมวลผลข้อมูล'
       );
     } else if (currentLoadingPercent < 88) {
       updateAppLoadingProgress(
         currentLoadingPercent + 4,
-        'กำลังแปลงเป็นไฟล์ PDF และอัปโหลดลง Drive',
-        'ขั้นตอนที่ 3/3: สร้างไฟล์ PDF'
+        'กำลังสร้างเอกสาร PDF บน Google Drive',
+        'ขั้นตอน 3/3: สร้าง PDF'
       );
     }
   }, 350);
@@ -714,7 +1018,7 @@ async function exportPDF() {
   try {
     const url = await callApi('generateInstructorProfilePDF', { userInitialName: currentUser.initialName });
     stopLoadingProgressTimer();
-    updateAppLoadingProgress(100, 'สร้างไฟล์ PDF เสร็จสมบูรณ์', 'เสร็จสิ้น 100%');
+    updateAppLoadingProgress(100, 'สร้างไฟล์ PDF สำเร็จ', 'เสร็จสิ้น 100%');
 
     await new Promise(resolve => setTimeout(resolve, 250));
     hideAppLoading();
@@ -722,7 +1026,7 @@ async function exportPDF() {
     Swal.fire({
       title: 'สร้างไฟล์ PDF สำเร็จ!',
       icon: 'success',
-      html: `<a href="${url}" target="_blank" class="btn btn-primary mt-2"><i class="fa-solid fa-file-pdf me-1"></i> เปิดดู / ดาวน์โหลด PDF</a>`
+      html: `<a href="${url}" target="_blank" class="btn btn-primary mt-2"><i class="fa-solid fa-file-pdf me-1"></i> เปิด / ดาวน์โหลด PDF</a>`
     });
   } catch (err) {
     stopLoadingProgressTimer();
@@ -836,9 +1140,9 @@ async function loadUserTraining() {
   const cardView = document.getElementById('trainingCardView');
   const countText = document.getElementById('trainingResultCountText');
 
-  if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">กำลังโหลดข้อมูล...</td></tr>';
-  if (cardView) cardView.innerHTML = '<div class="text-center py-4 text-muted">กำลังโหลดข้อมูล...</div>';
-  if (countText) countText.innerText = 'กำลังโหลดข้อมูล...';
+  if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">กำลังโหลด...</td></tr>';
+  if (cardView) cardView.innerHTML = '<div class="text-center py-4 text-muted">กำลังโหลด...</div>';
+  if (countText) countText.innerText = 'กำลังโหลด...';
 
   try {
     const records = await callApi('getTrainingRecords', { initialName: currentUser.initialName });
@@ -848,7 +1152,7 @@ async function loadUserTraining() {
   } catch (err) {
     if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">${err.message}</td></tr>`;
     if (cardView) cardView.innerHTML = `<div class="text-center py-4 text-danger">${err.message}</div>`;
-    if (countText) countText.innerText = 'ไม่สามารถโหลดข้อมูลได้';
+    if (countText) countText.innerText = '';
   }
 }
 
@@ -879,11 +1183,11 @@ function updateTrainingSummaryAndCategories() {
   });
 
   const subLabels = [
-    { id: 'catCountInitial',    cat: 'Initial Training',    desc: 'การฝึกอบรมเริ่มต้น' },
-    { id: 'catCountRecurrent',  cat: 'Recurrent Training',  desc: 'การฝึกอบรมทบทวนตามรอบ' },
-    { id: 'catCountOptional',   cat: 'Optional Training',   desc: 'การฝึกอบรมเพิ่มเติม' },
-    { id: 'catCountContinuing', cat: 'Continuing Training', desc: 'การพัฒนาความรู้ต่อเนื่อง' },
-    { id: 'catCountLicensing',  cat: 'Personnel Licensing', desc: 'ใบอนุญาตและคุณสมบัติบุคลากร' }
+    { id: 'catCountInitial',    cat: 'Initial Training',    desc: 'อบรมเบื้องต้น' },
+    { id: 'catCountRecurrent',  cat: 'Recurrent Training',  desc: 'อบรมทบทวนประจำปี' },
+    { id: 'catCountOptional',   cat: 'Optional Training',   desc: 'อบรมเพิ่มเติม' },
+    { id: 'catCountContinuing', cat: 'Continuing Training', desc: 'อบรมต่อเนื่อง' },
+    { id: 'catCountLicensing',  cat: 'Personnel Licensing', desc: 'ใบอนุญาตเจ้าหน้าที่' }
   ];
   subLabels.forEach(({ id, cat, desc }) => {
     const el = document.getElementById(id);
@@ -931,16 +1235,16 @@ function openTrainingDetailModal(index) {
   const rec = filtered[index];
   if (!rec) return;
 
-  const title = rec.sub2 || rec.sub1 || 'รายละเอียดรายการ';
+  const title = rec.sub2 || rec.sub1 || 'รายละเอียด';
   document.getElementById('detailModalTitle').innerText = title;
 
   const subPath = [rec.type, rec.sub1, rec.sub2, rec.sub3 ? `Role: ${rec.sub3}` : ''].filter(Boolean).join(' · ');
   document.getElementById('detailModalBody').innerHTML = `
-    <div class="mb-2"><span class="text-muted small">หมวดหมู่ / รายละเอียด:</span><div class="fw-semibold">${escapeHtml(subPath || '-')}</div></div>
+    <div class="mb-2"><span class="text-muted small">หมวดหมู่ / หลักสูตร:</span><div class="fw-semibold">${escapeHtml(subPath || '-')}</div></div>
     <div class="row g-2 mb-2 small">
       <div class="col-6"><span class="text-muted">ATO:</span><div class="fw-semibold">${escapeHtml(rec.ato || '-')}</div></div>
       <div class="col-6"><span class="text-muted">สถานะ:</span><div>${getSoftStatusBadge(rec.statusStr)}</div></div>
-      <div class="col-6"><span class="text-muted">วันที่ฝึกอบรม / ออกใบอนุญาต:</span><div class="fw-semibold">${escapeHtml(formatDateDisplay(rec.active))}</div></div>
+      <div class="col-6"><span class="text-muted">วันที่อบรม / ออก:</span><div class="fw-semibold">${escapeHtml(formatDateDisplay(rec.active))}</div></div>
       <div class="col-6"><span class="text-muted">วันหมดอายุ:</span><div class="fw-semibold">${escapeHtml(formatDateDisplay(rec.expire))}</div></div>
     </div>
     <div class="mt-2">${getSoftRemainingBadge(rec)}</div>
@@ -948,7 +1252,7 @@ function openTrainingDetailModal(index) {
 
   const footer = document.getElementById('detailModalFooter');
   footer.innerHTML = `
-    ${rec.link ? `<a href="${escapeAttr(rec.link)}" target="_blank" class="btn btn-primary btn-sm"><i class="fa-solid fa-file-lines me-1"></i>เปิดไฟล์แนบ</a>` : ''}
+    ${rec.link ? `<a href="${escapeAttr(rec.link)}" target="_blank" class="btn btn-primary btn-sm"><i class="fa-solid fa-file-lines me-1"></i>เปิดเอกสาร</a>` : ''}
     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ปิด</button>
   `;
 
@@ -960,7 +1264,7 @@ function renderUserTrainingCards(filtered) {
   if (!container) return;
 
   if (filtered.length === 0) {
-    container.innerHTML = '<div class="text-center py-4 text-muted bg-light rounded border">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</div>';
+    container.innerHTML = '<div class="text-center py-4 text-muted bg-light rounded border">ไม่พบรายการที่ค้นหา</div>';
     return;
   }
 
@@ -986,7 +1290,7 @@ function renderUserTrainingCards(filtered) {
 
         <div class="row g-2 small mb-3">
           <div class="col-6">
-            <div class="text-muted">วันที่ฝึกอบรม / ออกใบอนุญาต</div>
+            <div class="text-muted">วันที่อบรม / ออก</div>
             <div class="fw-bold text-dark mt-1">${escapeHtml(formatDateDisplay(r.active))}</div>
           </div>
           <div class="col-6">
@@ -1012,7 +1316,7 @@ function renderUserTrainingTable(filtered) {
 
   tbody.innerHTML = '';
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">ไม่พบรายการที่ค้นหา</td></tr>';
     return;
   }
 
@@ -1061,6 +1365,7 @@ function initAddForm() {
   populateSelect('addType', dbOptions.type);
   populateSelect('addSub3', [''].concat(dbOptions.authSub3));
   toggleExtraSubsPanel(false);
+  resetAddFileCard();
   onAtoOrTypeChange();
 }
 
@@ -1084,7 +1389,7 @@ async function onAtoOrTypeChange() {
     populateSelect('addSub1', list);
     onSub1Change();
   } catch (err) {
-    sub1Select.innerHTML = '<option value="">ผิดพลาด</option>';
+    sub1Select.innerHTML = '<option value="">โหลดไม่สำเร็จ</option>';
   }
 }
 
@@ -1099,7 +1404,7 @@ function onSub1Change() {
 
   sub2SelCont.classList.remove('hidden');
   sub2TxtCont.classList.add('hidden');
-  sub2Sel.innerHTML = '<option value="">-</option>';
+  sub2Sel.innerHTML = '<option value="">-- ไม่ระบุ --</option>';
 
   let hasSub2Options = false;
   if (type === 'Optional Training' && sub1.toUpperCase() === 'OTHER') {
@@ -1134,9 +1439,8 @@ document.getElementById('addRecordForm').addEventListener('submit', async functi
   const sub3 = document.getElementById('addSub3').value;
   const activeDate = document.getElementById('addActiveDate').value;
   const expireDate = document.getElementById('addExpireDate').value;
-  const fileInput = document.getElementById('addFile');
 
-  showAppLoading('กำลังตรวจสอบข้อมูลซ้ำ...', 'ตรวจสอบประวัติการฝึกอบรมและใบอนุญาต');
+  showAppLoading('กำลังตรวจสอบข้อมูล...', '');
 
   try {
     const dupRes = await callApi('checkDuplicateRecord', {
@@ -1146,20 +1450,20 @@ document.getElementById('addRecordForm').addEventListener('submit', async functi
     if (dupRes.isDuplicate) {
       hideAppLoading();
       const choice = await Swal.fire({
-        title: 'พบข้อมูลวิชานี้ในระบบแล้ว!',
-        html: `Active เดิม: <b>${dupRes.oldActive}</b> | Expire เดิม: <b>${dupRes.oldExpire}</b><br>สถานะ: <b>${dupRes.oldStatus}</b><br><br>ต้องการบันทึกทับข้อมูลเดิมหรือไม่?`,
+        title: 'พบข้อมูลซ้ำในระบบ!',
+        html: `Active เดิม: <b>${dupRes.oldActive}</b> | Expire เดิม: <b>${dupRes.oldExpire}</b><br>สถานะเดิม: <b>${dupRes.oldStatus}</b><br><br>ต้องการเขียนทับข้อมูลเดิมหรือไม่?`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'ใช่, บันทึกทับ',
+        confirmButtonText: 'ใช่, เขียนทับ',
         cancelButtonText: 'ยกเลิก'
       });
       if (choice.isConfirmed) {
-        await processFileAndSubmit(fileInput, {
+        await processFileAndSubmit({
           initialName: currentUser.initialName, ato, type, sub1, sub2, sub3, activeDate, expireDate, overwriteRow: dupRes.row
         });
       }
     } else {
-      await processFileAndSubmit(fileInput, {
+      await processFileAndSubmit({
         initialName: currentUser.initialName, ato, type, sub1, sub2, sub3, activeDate, expireDate, overwriteRow: null
       });
     }
@@ -1169,11 +1473,13 @@ document.getElementById('addRecordForm').addEventListener('submit', async functi
   }
 });
 
-async function processFileAndSubmit(fileInput, payload) {
-  showAppLoading('กำลังบันทึกข้อมูล...', 'อัปโหลดไฟล์แนบและบันทึกข้อมูลลงระบบ');
+async function processFileAndSubmit(payload) {
+  showAppLoading('กำลังบันทึกข้อมูล...', '');
 
-  if (fileInput.files && fileInput.files[0]) {
-    const file = fileInput.files[0];
+  if (addAttachState.status === 'uploaded' && addAttachState.url) {
+    payload.fileUrl = addAttachState.url;
+  } else if (addAttachState.status === 'pending' && addAttachState.file) {
+    const file = addAttachState.file;
     const base64 = await readFileAsBase64(file);
     const cleanFileName = `${payload.initialName}_${payload.sub1}_${file.name}`;
     const uploadRes = await callApi('uploadFileToDrive', {
@@ -1184,7 +1490,16 @@ async function processFileAndSubmit(fileInput, payload) {
       sheetType: 'record',
       isImage: false
     });
-    if (!uploadRes.success) throw new Error(uploadRes.message);
+    if (!uploadRes.success) {
+      addAttachState.status = 'failed';
+      addAttachState.errorMsg = uploadRes.message || 'อัปโหลดไม่สำเร็จ';
+      renderAddFileCard();
+      throw new Error(uploadRes.message || 'อัปโหลดไฟล์ไม่สำเร็จ');
+    }
+    addAttachState.status = 'uploaded';
+    addAttachState.progress = 100;
+    addAttachState.url = uploadRes.url;
+    renderAddFileCard();
     payload.fileUrl = uploadRes.url;
   } else {
     payload.fileUrl = '';
@@ -1192,9 +1507,10 @@ async function processFileAndSubmit(fileInput, payload) {
 
   await callApi('submitTrainingRecord', { data: payload });
   hideAppLoading();
-  Swal.fire('สำเร็จ!', 'บันทึกข้อมูลเรียบร้อยแล้ว (รอ Admin อนุมัติ)', 'success');
+  Swal.fire('บันทึกสำเร็จ!', 'ส่งข้อมูลเข้าระบบเรียบร้อยแล้ว (รอ Admin ตรวจสอบ)', 'success');
   document.getElementById('addRecordForm').reset();
   toggleExtraSubsPanel(false);
+  resetAddFileCard();
   onAtoOrTypeChange();
 }
 
@@ -1259,11 +1575,11 @@ function updateMonitorCategoryCounts() {
   });
 
   const defs = [
-    { id: 'monCatCountInitial',    cat: 'Initial Training',    desc: 'การฝึกอบรมเริ่มต้น' },
-    { id: 'monCatCountRecurrent',  cat: 'Recurrent Training',  desc: 'การฝึกอบรมทบทวนตามรอบ' },
-    { id: 'monCatCountOptional',   cat: 'Optional Training',   desc: 'การฝึกอบรมเพิ่มเติม' },
-    { id: 'monCatCountContinuing', cat: 'Continuing Training', desc: 'การพัฒนาความรู้ต่อเนื่อง' },
-    { id: 'monCatCountLicensing',  cat: 'Personnel Licensing', desc: 'ใบอนุญาตและคุณสมบัติบุคลากร' }
+    { id: 'monCatCountInitial',    cat: 'Initial Training',    desc: 'อบรมเบื้องต้น' },
+    { id: 'monCatCountRecurrent',  cat: 'Recurrent Training',  desc: 'อบรมทบทวนประจำปี' },
+    { id: 'monCatCountOptional',   cat: 'Optional Training',   desc: 'อบรมเพิ่มเติม' },
+    { id: 'monCatCountContinuing', cat: 'Continuing Training', desc: 'อบรมต่อเนื่อง' },
+    { id: 'monCatCountLicensing',  cat: 'Personnel Licensing', desc: 'ใบอนุญาตเจ้าหน้าที่' }
   ];
   defs.forEach(({ id, cat, desc }) => {
     const el = document.getElementById(id);
@@ -1299,7 +1615,7 @@ function matchesMonitorScope(rec, scope) {
 async function loadMonitor() {
   const body = document.getElementById('monitorMatrixBody');
   if (body) {
-    body.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">กำลังโหลดข้อมูล Monitor...</td></tr>';
+    body.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">กำลังโหลด Monitor...</td></tr>';
   }
   try {
     const data = await callApi('getMonitorData');
@@ -1471,7 +1787,7 @@ function renderMonitorView() {
 
   const summaryEl = document.getElementById('monitorSummaryText');
   if (summaryEl) {
-    summaryEl.innerText = `แสดง ${matrixUsers.length} บุคลากร · ${scopedRecs.length} รายการ · Pass ${kpiPass} รายการ · ต้องติดตาม ${urgentRecs.length} รายการ`;
+    summaryEl.innerText = `แสดง ${matrixUsers.length} คน · ${scopedRecs.length} รายการ · Pass ${kpiPass} รายการ · แจ้งเตือน ${urgentRecs.length} รายการ`;
   }
 
   if (monitorSubMode === 'alert') {
@@ -1512,7 +1828,7 @@ function renderMonitorMatrix(filteredUsers, scopedRecs, sub1Filter, mode = 'full
   `;
 
   if (filteredUsers.length === 0 || columnHeaders.length === 0) {
-    bodyEl.innerHTML = `<tr><td colspan="${columnHeaders.length + 1}" class="py-4 text-muted">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</td></tr>`;
+    bodyEl.innerHTML = `<tr><td colspan="${columnHeaders.length + 1}" class="py-4 text-muted">ไม่พบข้อมูลตามเงื่อนไข</td></tr>`;
     return;
   }
 
@@ -1552,7 +1868,7 @@ function renderMonitorAlertList(urgentRecs) {
   if (!container) return;
 
   if (urgentRecs.length === 0) {
-    container.innerHTML = '<div class="text-center py-4 text-muted bg-light rounded border">ไม่มีรายการที่หมดอายุหรือใกล้หมดอายุในตัวกรองนี้</div>';
+    container.innerHTML = '<div class="text-center py-4 text-muted bg-light rounded border">ไม่มีรายการที่ต้องดำเนินการเร่งด่วน</div>';
     return;
   }
 
@@ -1594,11 +1910,11 @@ function openPersonnelDrawer(initialName) {
   const bodyEl = document.getElementById('drawerPersonBody');
   bodyEl.innerHTML = `
     <div class="d-flex flex-wrap gap-2 mb-3">
-      <span class="badge bg-primary-subtle text-primary px-3 py-2">รายการทั้งหมด ${recs.length} รายการ</span>
-      <span class="badge bg-warning-subtle text-warning-emphasis px-3 py-2">ต้องติดตาม / ใกล้หมดอายุ ${urgentCount} รายการ</span>
+      <span class="badge bg-primary-subtle text-primary px-3 py-2">ทั้งหมด ${recs.length} รายการ</span>
+      <span class="badge bg-warning-subtle text-warning-emphasis px-3 py-2">ใกล้หมดอายุ / หมดอายุ ${urgentCount} รายการ</span>
     </div>
     ${recs.length === 0
-      ? '<div class="text-muted small py-3">ไม่พบประวัติการฝึกอบรมของบุคลากรรายนี้</div>'
+      ? '<div class="text-muted small py-3">ไม่พบประวัติการฝึกอบรม</div>'
       : `<div class="d-flex flex-column gap-2">${recs.map(r => `
           <div class="border rounded-3 p-3 bg-white">
             <div class="d-flex justify-content-between align-items-start gap-2">
@@ -1696,7 +2012,7 @@ function getRecordBucket(rec) {
 async function loadAdminDashboard() {
   const tbody = document.getElementById('dashboardTableBody');
   if (tbody) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">กำลังโหลดข้อมูล Dashboard...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">กำลังโหลด Dashboard...</td></tr>';
   }
   try {
     const res = await callApi('getAllTrainingRecords');
@@ -1827,7 +2143,7 @@ function renderDashboardTable() {
     });
 
   if (finalRows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">ไม่พบรายการที่ตรงกับเงื่อนไข</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">ไม่พบข้อมูล</td></tr>';
     return;
   }
 
@@ -1880,7 +2196,7 @@ function renderAdminTable() {
 
   const filtered = allAdminRecords.filter(r => filter === 'all' || String(r.statusStr || '').toLowerCase() === filter);
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">ไม่มีรายการในหมวดหมู่นี้</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">ไม่มีรายการ</td></tr>';
     return;
   }
 
@@ -1907,7 +2223,7 @@ function renderAdminTable() {
           <button type="button" class="btn btn-sm btn-success rounded-pill px-2 py-1 me-1" onclick="changeRecordStatus(${r.row}, 'approve')" title="อนุมัติ">
             <i class="fa-solid fa-check me-1"></i>อนุมัติ
           </button>
-          <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" onclick="changeRecordStatus(${r.row}, 'reject')" title="ปฏิเสธ">
+          <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" onclick="changeRecordStatus(${r.row}, 'reject')" title="ไม่อนุมัติ">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </td>
@@ -1966,7 +2282,7 @@ function populateSelect(elementId, items) {
   items.forEach(val => {
     const opt = document.createElement('option');
     opt.value = val;
-    opt.text = val || '-- เลือก --';
+    opt.text = val || '-- ไม่ระบุ --';
     sel.appendChild(opt);
   });
 }
