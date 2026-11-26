@@ -116,7 +116,7 @@
       transition: width 0.25s ease;
     }
 
-    /* พื้นหลังการ์ดสีขาว + แถบเน้นและสีไอคอน */
+    /* Section Cards */
     .clean-section-card {
       background-color: #ffffff;
       border: 1px solid #e2e8f0;
@@ -210,6 +210,64 @@
     .doc-available-tag:hover {
       text-decoration: underline;
     }
+
+    /* File Attachment Card (5 States) */
+    .attach-card-box {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+    }
+    .attach-dropzone {
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 1.25rem 1rem;
+      text-align: center;
+      background-color: #f8fafc;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+    .attach-dropzone:hover {
+      border-color: #2563eb;
+      background-color: #eff6ff;
+    }
+    .attach-cloud-circle {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background-color: #ede9fe;
+      color: #7c3aed;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      margin-bottom: 0.5rem;
+    }
+    .attach-file-panel {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      background-color: #ffffff;
+    }
+    .attach-type-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.72rem;
+      flex-shrink: 0;
+    }
+    .attach-type-pdf { background-color: #fee2e2; color: #dc2626; }
+    .attach-type-img { background-color: #dbeafe; color: #2563eb; }
+    .attach-type-doc { background-color: #f1f5f9; color: #475569; }
+    .attach-status-none      { color: #64748b; font-size: 0.8rem; font-weight: 600; }
+    .attach-status-pending   { color: #d97706; font-size: 0.8rem; font-weight: 700; }
+    .attach-status-uploading { color: #0d6efd; font-size: 0.8rem; font-weight: 700; }
+    .attach-status-uploaded  { color: #16a34a; font-size: 0.8rem; font-weight: 700; }
+    .attach-status-failed    { color: #dc2626; font-size: 0.8rem; font-weight: 700; }
 
     /* User & Admin Soft KPI Cards */
     .summary-stat-box {
@@ -625,15 +683,15 @@
           <div class="card p-4">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 pb-3 border-bottom">
               <div>
-                <h5 class="fw-bold text-primary mb-0">ข้อมูลประวัติส่วนตัว (Background)</h5>
-                <small class="text-muted">จัดการข้อมูลส่วนตัว ประสบการณ์ทำงาน และวุฒิการศึกษา</small>
+                <h5 class="fw-bold text-primary mb-0">ประวัติส่วนตัว (Background)</h5>
+                <small class="text-muted">ข้อมูลบุคลากร การศึกษา และประสบการณ์การทำงาน</small>
               </div>
               <div class="d-flex flex-wrap gap-2">
                 <button type="button" class="btn btn-outline-danger btn-sm" onclick="exportPDF()">
                   <i class="fa-solid fa-file-pdf me-1"></i> Export Profile PDF
                 </button>
                 <button type="button" class="btn btn-primary btn-sm px-3" onclick="saveProfileData()" id="btnSaveBg">
-                  <i class="fa-solid fa-save me-1"></i> บันทึก
+                  <i class="fa-solid fa-save me-1"></i> บันทึกข้อมูล
                 </button>
               </div>
             </div>
@@ -704,14 +762,14 @@
                         <small class="text-muted">ประวัติการศึกษา</small>
                       </div>
                     </div>
-                    <span class="badge rounded-pill bg-light text-dark border px-3 py-2" id="eduCountBadge">0 รายการ</span>
+                    <span class="badge rounded-pill bg-light text-dark border px-3 py-2" id="eduCountBadge">0 วุฒิ</span>
                   </div>
                   <div class="accent-bar-purple mb-3"></div>
 
                   <div id="eduListContainer" class="d-flex flex-column gap-3 mb-3"></div>
 
                   <button type="button" class="btn btn-outline-secondary w-100 py-2 rounded-3 fw-semibold" onclick="openEduModal()">
-                    <i class="fa-solid fa-plus me-1"></i> เพิ่มวุฒิการศึกษา
+                    <i class="fa-solid fa-plus me-1"></i> เพิ่ม / แก้ไขวุฒิการศึกษา
                   </button>
 
                   <input type="hidden" id="eduBachYear">
@@ -740,12 +798,12 @@
                       </span>
                       <div>
                         <h6 class="fw-bold text-dark mb-0">Experience</h6>
-                        <small class="text-muted d-block">ประสบการณ์ทำงาน</small>
+                        <small class="text-muted d-block">ประสบการณ์การทำงาน</small>
                         <small class="text-secondary" id="expCountText">0 รายการ</small>
                       </div>
                     </div>
                     <button type="button" id="btnAddExp" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" onclick="openExpModal(-1)">
-                      <i class="fa-solid fa-plus me-1"></i> เพิ่ม
+                      <i class="fa-solid fa-plus me-1"></i> เพิ่มประสบการณ์
                     </button>
                   </div>
                   <div class="accent-bar-green mb-4"></div>
@@ -767,9 +825,9 @@
               </div>
               <div class="d-flex align-items-center gap-2">
                 <button type="button" class="btn btn-dark rounded-pill px-3 py-2 fw-semibold" onclick="goToAddRecordTab()">
-                  <i class="fa-solid fa-plus me-1"></i> เพิ่ม
+                  <i class="fa-solid fa-plus me-1"></i> เพิ่มข้อมูล
                 </button>
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2" onclick="loadUserTraining()" title="รีเฟรชข้อมูล">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2" onclick="loadUserTraining()" title="รีเฟรช">
                   <i class="fa-solid fa-rotate"></i>
                 </button>
               </div>
@@ -780,7 +838,7 @@
                 <div class="summary-stat-box stat-total active-stat" data-stat="all" onclick="selectTrainingStatFilter('all')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-solid fa-bars-staggered"></i>
-                    <span>รายการทั้งหมด</span>
+                    <span>ทั้งหมด</span>
                   </div>
                   <div class="fs-2 fw-bold lh-1" id="sumCountAll">0</div>
                 </div>
@@ -798,7 +856,7 @@
                 <div class="summary-stat-box stat-waiting" data-stat="waiting approve" onclick="selectTrainingStatFilter('waiting approve')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-regular fa-clock"></i>
-                    <span>รออนุมัติ</span>
+                    <span>รอตรวจสอบ</span>
                   </div>
                   <div class="fs-2 fw-bold lh-1" id="sumCountWaiting">0</div>
                 </div>
@@ -835,7 +893,7 @@
                       <i class="fa-solid fa-graduation-cap" style="color:#2563eb;"></i>
                       <span>
                         <span class="d-block fw-semibold">Initial Training</span>
-                        <small class="text-muted" id="catCountInitial">การฝึกอบรมเริ่มต้น</small>
+                        <small class="text-muted" id="catCountInitial">อบรมเบื้องต้น</small>
                       </span>
                     </span>
                     <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
@@ -847,7 +905,7 @@
                       <i class="fa-solid fa-arrows-rotate" style="color:#16a34a;"></i>
                       <span>
                         <span class="d-block fw-semibold">Recurrent Training</span>
-                        <small class="text-muted" id="catCountRecurrent">การฝึกอบรมทบทวนตามรอบ</small>
+                        <small class="text-muted" id="catCountRecurrent">อบรมทบทวนประจำปี</small>
                       </span>
                     </span>
                     <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
@@ -859,7 +917,7 @@
                       <i class="fa-solid fa-book-open" style="color:#9333ea;"></i>
                       <span>
                         <span class="d-block fw-semibold">Optional Training</span>
-                        <small class="text-muted" id="catCountOptional">การฝึกอบรมเพิ่มเติม</small>
+                        <small class="text-muted" id="catCountOptional">อบรมเพิ่มเติม</small>
                       </span>
                     </span>
                     <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
@@ -871,7 +929,7 @@
                       <i class="fa-solid fa-award" style="color:#ea580c;"></i>
                       <span>
                         <span class="d-block fw-semibold">Continuing Training</span>
-                        <small class="text-muted" id="catCountContinuing">การพัฒนาความรู้ต่อเนื่อง</small>
+                        <small class="text-muted" id="catCountContinuing">อบรมต่อเนื่อง</small>
                       </span>
                     </span>
                     <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
@@ -883,7 +941,7 @@
                       <i class="fa-regular fa-id-badge" style="color:#0284c7;"></i>
                       <span>
                         <span class="d-block fw-semibold">Personnel Licensing</span>
-                        <small class="text-muted" id="catCountLicensing">ใบอนุญาตและคุณสมบัติบุคลากร</small>
+                        <small class="text-muted" id="catCountLicensing">ใบอนุญาตเจ้าหน้าที่</small>
                       </span>
                     </span>
                     <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
@@ -895,7 +953,7 @@
             <div class="mb-3">
               <div class="input-group">
                 <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                <input type="text" id="trainingSearchInput" class="form-control border-start-0 rounded-end-3 py-2" autocomplete="off" placeholder="ค้นหาชื่อหลักสูตร / ใบอนุญาต..." oninput="renderUserTraining()">
+                <input type="text" id="trainingSearchInput" class="form-control border-start-0 rounded-end-3 py-2" autocomplete="off" placeholder="ค้นหาหลักสูตร / ใบอนุญาต..." oninput="renderUserTraining()">
               </div>
             </div>
 
@@ -903,8 +961,8 @@
               <select id="trainingStatusFilter" class="form-select w-auto rounded-3" onchange="onTrainingStatusDropdownChange()">
                 <option value="all">ทุกสถานะ</option>
                 <option value="approve">อนุมัติแล้ว (Approved)</option>
-                <option value="waiting approve">รออนุมัติ (Waiting Approve)</option>
-                <option value="reject">ปฏิเสธ (Rejected)</option>
+                <option value="waiting approve">รอตรวจสอบ (Waiting Approve)</option>
+                <option value="reject">ไม่อนุมัติ (Rejected)</option>
                 <option value="expiring">ใกล้หมดอายุ</option>
               </select>
 
@@ -918,7 +976,7 @@
               </div>
             </div>
 
-            <div class="small text-muted mb-3" id="trainingResultCountText">กำลังโหลดข้อมูล...</div>
+            <div class="small text-muted mb-3" id="trainingResultCountText">กำลังโหลด...</div>
 
             <div id="trainingCardView" class="d-flex flex-column gap-3"></div>
 
@@ -928,7 +986,7 @@
                   <tr class="small text-secondary">
                     <th class="py-2">หลักสูตร / ใบอนุญาต</th>
                     <th class="py-2">หมวดหมู่</th>
-                    <th class="py-2 text-nowrap">วันที่ฝึกอบรม / ออกใบอนุญาต</th>
+                    <th class="py-2 text-nowrap">วันที่อบรม / ออก</th>
                     <th class="py-2 text-nowrap">วันหมดอายุ</th>
                     <th class="py-2 text-center text-nowrap">Days left</th>
                     <th class="py-2 text-center">สถานะ</th>
@@ -949,7 +1007,7 @@
                 <span class="section-icon-box bg-primary" style="width:36px;height:36px;font-size:1rem;">
                   <i class="fa-solid fa-file-circle-plus"></i>
                 </span>
-                <h5 class="fw-bold text-dark mb-0">เพิ่มข้อมูลการฝึกอบรม</h5>
+                <h5 class="fw-bold text-dark mb-0">บันทึกข้อมูลการฝึกอบรม / ใบอนุญาตใหม่</h5>
               </div>
               <span class="badge rounded-pill bg-primary-subtle text-primary px-3 py-2">Training Form</span>
             </div>
@@ -961,18 +1019,18 @@
               </div>
 
               <div class="form-field-box">
-                <label class="form-label">ประเภทการฝึกอบรม <span class="text-danger">*</span></label>
+                <label class="form-label">ประเภท <span class="text-danger">*</span></label>
                 <select id="addType" class="form-select" required onchange="onAtoOrTypeChange()"></select>
               </div>
 
               <div class="form-field-box">
-                <label class="form-label">หลักสูตร / ใบอนุญาต <span class="text-danger">*</span></label>
+                <label class="form-label">หลักสูตร / รายการ <span class="text-danger">*</span></label>
                 <select id="addSub1" class="form-select" required onchange="onSub1Change()"></select>
               </div>
 
               <div>
                 <button type="button" id="btnToggleExtraSubs" class="btn btn-light border w-100 d-flex justify-content-between align-items-center py-2 px-3 rounded-3 fw-semibold text-secondary" onclick="toggleExtraSubsPanel()">
-                  <span><i class="fa-solid fa-sliders me-2 text-primary"></i>ตัวเลือกเพิ่มเติม (Sub Type 2–3)</span>
+                  <span><i class="fa-solid fa-sliders me-2 text-primary"></i>รายละเอียดเพิ่มเติม (Sub Type 2–3)</span>
                   <i class="fa-solid fa-chevron-down" id="extraSubsChevron"></i>
                 </button>
               </div>
@@ -984,8 +1042,8 @@
                     <select id="addSub2Select" class="form-select bg-white"></select>
                   </div>
                   <div class="col-md-6 hidden" id="sub2TextContainer">
-                    <label class="form-label">ระบุชื่อหลักสูตร / รายละเอียดเพิ่มเติม</label>
-                    <input type="text" id="addSub2Text" class="form-control bg-white" placeholder="พิมพ์ชื่อหลักสูตร...">
+                    <label class="form-label">ระบุหลักสูตร / รายละเอียด</label>
+                    <input type="text" id="addSub2Text" class="form-control bg-white" placeholder="ระบุชื่อหลักสูตร...">
                   </div>
                   <div class="col-md-6" id="sub3Container">
                     <label class="form-label">Role / Authorization (Sub Type 3)</label>
@@ -995,23 +1053,31 @@
               </div>
 
               <div class="form-field-box">
-                <label class="form-label">วันที่เริ่มมีผล (Active Date) <span class="text-danger">*</span></label>
+                <label class="form-label">วันที่อบรม / ออกใบอนุญาต (Active Date) <span class="text-danger">*</span></label>
                 <input type="date" id="addActiveDate" class="form-control" required>
               </div>
 
               <div class="form-field-box" id="expireDateContainer">
-                <label class="form-label">วันที่หมดอายุ (Expire Date)</label>
+                <label class="form-label">วันหมดอายุ (Expire Date)</label>
                 <input type="date" id="addExpireDate" class="form-control">
               </div>
 
-              <div class="form-field-box">
-                <label class="form-label">Upload ใบรับรอง / ใบอนุญาต (PDF หรือ รูปภาพ)</label>
-                <input type="file" id="addFile" class="form-control" accept=".pdf,image/*">
+              <!-- File Card (5 States) -->
+              <div class="attach-card-box">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <div>
+                    <div class="fw-bold text-dark small"><i class="fa-solid fa-paperclip me-1 text-primary"></i>เอกสารหลักฐาน (ใบรับรอง / ใบอนุญาต)</div>
+                    <div class="text-muted" style="font-size:0.76rem;">Supporting Documents · PDF, JPG, PNG</div>
+                  </div>
+                  <span id="addAttachTopBadge" class="attach-status-none"><i class="fa-regular fa-file me-1"></i>ยังไม่มีเอกสารแนบ</span>
+                </div>
+                <input type="file" id="addFile" class="hidden" accept=".pdf,image/*" onchange="handleAddFileSelected(this)">
+                <div id="addFileCardContainer"></div>
               </div>
 
               <div class="mt-2 d-flex justify-content-end">
                 <button type="submit" id="btnSubmitRecord" class="btn btn-success px-4 py-2 fw-bold rounded-pill">
-                  <i class="fa-solid fa-paper-plane me-1"></i> บันทึก
+                  <i class="fa-solid fa-paper-plane me-1"></i> บันทึกข้อมูล
                 </button>
               </div>
             </form>
@@ -1024,7 +1090,7 @@
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
               <div>
                 <h4 class="fw-bold text-dark mb-1">Training Monitor</h4>
-                <div class="text-muted small">ติดตามสถานะการฝึกอบรมและใบอนุญาตของบุคลากร (คลิก Initial เพื่อดูรายละเอียดรายบุคคล)</div>
+                <div class="text-muted small">ภาพรวมสถานะการฝึกอบรมและใบอนุญาตแยกตาม Initial</div>
               </div>
               <div class="d-flex flex-wrap align-items-center gap-2">
                 <div class="clock-pill">
@@ -1056,7 +1122,7 @@
                 <div class="summary-stat-box stat-approved" data-mon-scope="normal" onclick="selectMonitorScope('normal')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-regular fa-circle-check"></i>
-                    <span>ใช้งานได้ (> 90 วัน)</span>
+                    <span>ปกติ (&gt; 90 วัน)</span>
                   </div>
                   <div class="fs-2 fw-bold lh-1" id="monKpiNormal">0</div>
                 </div>
@@ -1083,7 +1149,7 @@
                 <div class="summary-stat-box stat-pass" data-mon-scope="pass" onclick="selectMonitorScope('pass')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-solid fa-check-double"></i>
-                    <span>Pass / ไม่หมดอายุ</span>
+                    <span>Pass / ยกเว้น</span>
                   </div>
                   <div class="fs-2 fw-bold lh-1" id="monKpiPass">0</div>
                 </div>
@@ -1111,7 +1177,7 @@
                       <i class="fa-solid fa-graduation-cap" style="color:#2563eb;"></i>
                       <span>
                         <span class="d-block fw-semibold">Initial Training</span>
-                        <small class="text-muted" id="monCatCountInitial">การฝึกอบรมเริ่มต้น</small>
+                        <small class="text-muted" id="monCatCountInitial">อบรมเบื้องต้น</small>
                       </span>
                     </span>
                     <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
@@ -1123,7 +1189,7 @@
                       <i class="fa-solid fa-arrows-rotate" style="color:#16a34a;"></i>
                       <span>
                         <span class="d-block fw-semibold">Recurrent Training</span>
-                        <small class="text-muted" id="monCatCountRecurrent">การฝึกอบรมทบทวนตามรอบ</small>
+                        <small class="text-muted" id="monCatCountRecurrent">อบรมทบทวนประจำปี</small>
                       </span>
                     </span>
                     <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
@@ -1135,7 +1201,7 @@
                       <i class="fa-solid fa-book-open" style="color:#9333ea;"></i>
                       <span>
                         <span class="d-block fw-semibold">Optional Training</span>
-                        <small class="text-muted" id="monCatCountOptional">การฝึกอบรมเพิ่มเติม</small>
+                        <small class="text-muted" id="monCatCountOptional">อบรมเพิ่มเติม</small>
                       </span>
                     </span>
                     <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
@@ -1147,7 +1213,7 @@
                       <i class="fa-solid fa-award" style="color:#ea580c;"></i>
                       <span>
                         <span class="d-block fw-semibold">Continuing Training</span>
-                        <small class="text-muted" id="monCatCountContinuing">การพัฒนาความรู้ต่อเนื่อง</small>
+                        <small class="text-muted" id="monCatCountContinuing">อบรมต่อเนื่อง</small>
                       </span>
                     </span>
                     <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
@@ -1159,7 +1225,7 @@
                       <i class="fa-regular fa-id-badge" style="color:#0284c7;"></i>
                       <span>
                         <span class="d-block fw-semibold">Personnel Licensing</span>
-                        <small class="text-muted" id="monCatCountLicensing">ใบอนุญาตและคุณสมบัติบุคลากร</small>
+                        <small class="text-muted" id="monCatCountLicensing">ใบอนุญาตเจ้าหน้าที่</small>
                       </span>
                     </span>
                     <i class="fa-regular fa-circle-check text-primary fs-5 category-check-icon d-none"></i>
@@ -1233,12 +1299,12 @@
 
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small mb-3 px-1">
               <div class="d-flex flex-wrap gap-3">
-                <span class="legend-dot-item"><span class="color-circle-dot" style="background:#22c55e;"></span> ใช้งานได้ (&gt; 90 วัน)</span>
+                <span class="legend-dot-item"><span class="color-circle-dot" style="background:#22c55e;"></span> ปกติ (&gt; 90 วัน)</span>
                 <span class="legend-dot-item"><span class="color-circle-dot" style="background:#f59e0b;"></span> ใกล้หมดอายุ (1–90 วัน)</span>
-                <span class="legend-dot-item"><span class="color-circle-dot" style="background:#ef4444;"></span> หมดอายุแล้ว (&le; 0 วัน)</span>
-                <span class="legend-dot-item"><span class="color-circle-dot" style="background:#0ea5e9;"></span> Pass / ไม่กำหนดวันหมดอายุ</span>
+                <span class="legend-dot-item"><span class="color-circle-dot" style="background:#ef4444;"></span> หมดอายุ (&le; 0 วัน)</span>
+                <span class="legend-dot-item"><span class="color-circle-dot" style="background:#0ea5e9;"></span> Pass / ยกเว้น</span>
               </div>
-              <span class="text-muted" id="monitorSummaryText">กำลังโหลดข้อมูล...</span>
+              <span class="text-muted" id="monitorSummaryText">กำลังโหลด...</span>
             </div>
 
             <div id="monitorMatrixSection" class="border rounded-3 overflow-hidden bg-white">
@@ -1266,7 +1332,7 @@
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
               <div>
                 <h4 class="fw-bold text-dark mb-1">Dashboard Overview</h4>
-                <div class="text-muted small">ภาพรวมรายการฝึกอบรมและใบอนุญาตแยกตามช่วงวันคงเหลือ</div>
+                <div class="text-muted small">รายการข้อมูลการฝึกอบรมและวันคงเหลือทั้งหมด</div>
               </div>
               <div class="d-flex flex-wrap gap-2">
                 <button type="button" class="btn btn-dark rounded-pill px-3 py-2 fw-semibold" onclick="loadAdminDashboard()">
@@ -1283,7 +1349,7 @@
                 <div class="summary-stat-box stat-total active-stat" data-bucket="ALL" onclick="selectDashboardBucket('ALL')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-solid fa-bars-staggered"></i>
-                    <span>รายการทั้งหมด</span>
+                    <span>ทั้งหมด</span>
                   </div>
                   <div class="fs-2 fw-bold lh-1" id="dashCountAll">0</div>
                 </div>
@@ -1292,7 +1358,7 @@
                 <div class="summary-stat-box stat-approved" data-bucket="NORMAL" onclick="selectDashboardBucket('NORMAL')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-regular fa-circle-check"></i>
-                    <span>ใช้งานได้ (Normal)</span>
+                    <span>ปกติ (Normal)</span>
                   </div>
                   <div class="fs-2 fw-bold lh-1" id="dashCountNormal">0</div>
                 </div>
@@ -1310,7 +1376,7 @@
                 <div class="summary-stat-box stat-expired" data-bucket="EXPIRE" onclick="selectDashboardBucket('EXPIRE')">
                   <div class="d-flex justify-content-between align-items-center small fw-semibold mb-2">
                     <i class="fa-solid fa-triangle-exclamation"></i>
-                    <span>หมดอายุแล้ว (Expire)</span>
+                    <span>หมดอายุ (Expire)</span>
                   </div>
                   <div class="fs-2 fw-bold lh-1" id="dashCountExpire">0</div>
                 </div>
@@ -1334,8 +1400,8 @@
                     <select id="dashFilterDaysLeft" class="d-none">
                       <option value="ALL">All</option>
                       <option value="EXPIRE">Expire</option>
-                      <option value="WARNING">Warning (≤30d)</option>
-                      <option value="CAUTION">Caution (≤90d)</option>
+                      <option value="WARNING">Warning (30d)</option>
+                      <option value="CAUTION">Caution (90d)</option>
                       <option value="NORMAL">Normal (&gt;90d)</option>
                       <option value="EXEMPTED">Exempted</option>
                       <option value="PASS">Pass</option>
@@ -1424,8 +1490,8 @@
                   <thead>
                     <tr>
                       <th>Initial</th>
-                      <th>หลักสูตร / ใบอนุญาต</th>
-                      <th>หมวดหมู่</th>
+                      <th>หลักสูตร / รายการ</th>
+                      <th>ประเภท</th>
                       <th class="text-nowrap">Active Date</th>
                       <th class="text-nowrap">Expire Date</th>
                       <th class="text-center text-nowrap" style="cursor:pointer;" onclick="toggleDashboardSort()">
@@ -1447,17 +1513,17 @@
           <div class="card p-4">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
               <div>
-                <h4 class="fw-bold text-dark mb-1">ตรวจสอบและอนุมัติรายการ</h4>
-                <div class="text-muted small">จัดการคำขออนุมัติบันทึกการฝึกอบรมและใบอนุญาตของบุคลากร</div>
+                <h4 class="fw-bold text-dark mb-1">อนุมัติรายการฝึกอบรม</h4>
+                <div class="text-muted small">ตรวจสอบและอนุมัติข้อมูลที่บุคลากรส่งเข้ามา</div>
               </div>
               <div class="d-flex align-items-center gap-2">
                 <select id="adminStatusFilter" class="form-select rounded-3 w-auto" onchange="renderAdminTable()">
-                  <option value="waiting approve">รออนุมัติ (Waiting Approve)</option>
+                  <option value="waiting approve">รอตรวจสอบ (Waiting Approve)</option>
                   <option value="all">ทั้งหมด (All)</option>
                   <option value="approve">อนุมัติแล้ว (Approved)</option>
-                  <option value="reject">ปฏิเสธ (Rejected)</option>
+                  <option value="reject">ไม่อนุมัติ (Rejected)</option>
                 </select>
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2" onclick="loadAdminRecords()" title="รีเฟรชข้อมูล">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2" onclick="loadAdminRecords()" title="รีเฟรช">
                   <i class="fa-solid fa-rotate"></i>
                 </button>
               </div>
@@ -1469,8 +1535,8 @@
                   <thead>
                     <tr>
                       <th>Initial</th>
-                      <th>หลักสูตร / ใบอนุญาต</th>
-                      <th>หมวดหมู่</th>
+                      <th>หลักสูตร / รายการ</th>
+                      <th>ประเภท</th>
                       <th class="text-nowrap">Active</th>
                       <th class="text-nowrap">Expire</th>
                       <th class="text-center">File</th>
@@ -1494,7 +1560,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <div>
-            <h6 class="modal-title fw-bold mb-0" id="drawerPersonTitle">รายละเอียดบุคลากร</h6>
+            <h6 class="modal-title fw-bold mb-0" id="drawerPersonTitle"></h6>
             <small class="text-muted" id="drawerPersonSubtitle">-</small>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -1512,7 +1578,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h6 class="modal-title fw-bold" id="detailModalTitle">รายละเอียดรายการ</h6>
+          <h6 class="modal-title fw-bold" id="detailModalTitle"></h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body" id="detailModalBody"></div>
@@ -1528,7 +1594,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h6 class="modal-title fw-bold" id="expModalTitle">ประสบการณ์ทำงาน</h6>
+          <h6 class="modal-title fw-bold" id="expModalTitle">ประสบการณ์การทำงาน</h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -1538,11 +1604,11 @@
             <input type="text" id="expModalPos" class="form-control" placeholder="เช่น Ground Instructor">
           </div>
           <div class="mb-3">
-            <label class="form-label">หน่วยงาน / องค์กร</label>
+            <label class="form-label">หน่วยงาน / สถานที่</label>
             <input type="text" id="expModalName" class="form-control" placeholder="เช่น Civil Aviation Training Center, Bangkok">
           </div>
           <div class="mb-2">
-            <label class="form-label">ช่วงเวลา / ปี</label>
+            <label class="form-label">ช่วงปี / ระยะเวลา</label>
             <input type="text" id="expModalYear" class="form-control" placeholder="เช่น 1 ต.ค. 2555 – ปัจจุบัน">
           </div>
         </div>
@@ -1577,7 +1643,7 @@
             </select>
           </div>
           <div class="mb-3">
-            <label class="form-label">วุฒิการศึกษา / สาขา</label>
+            <label class="form-label">สาขา / วุฒิการศึกษา</label>
             <input type="text" id="eduModalDeg" class="form-control" placeholder="เช่น Master of Science (Aviation Management)">
           </div>
           <div class="mb-3">
@@ -1585,25 +1651,23 @@
             <input type="text" id="eduModalUni" class="form-control" placeholder="เช่น Eastern Asia University">
           </div>
           <div class="mb-3">
-            <label class="form-label">ปีที่จบ / วันที่จบ</label>
-            <input type="text" id="eduModalYear" class="form-control" placeholder="เช่น 15 พ.ค. 2559">
+            <label class="form-label">ปีที่สำเร็จการศึกษา / วันที่</label>
+            <input type="text" id="eduModalYear" class="form-control" placeholder="เช่น 15 พฤษภาคม 2559">
           </div>
           <div class="mb-2">
-            <label class="form-label">ไฟล์แนบวุฒิการศึกษา</label>
-            <div class="d-flex align-items-center gap-2">
-              <input type="file" id="eduModalFileInput" class="form-control form-control-sm" onchange="handleEduModalFileUpload(this)">
-            </div>
+            <label class="form-label">เอกสารหลักฐานการศึกษา</label>
+            <input type="file" id="eduModalFileInput" class="form-control form-control-sm hidden" accept=".pdf,image/*" onchange="handleEduModalFileSelected(this)">
             <input type="hidden" id="eduModalFileUrl">
-            <div class="mt-1 small" id="eduModalFileStatus"></div>
+            <div id="eduModalFileCardContainer"></div>
           </div>
         </div>
         <div class="modal-footer justify-content-between">
           <button type="button" id="btnClearEduModal" class="btn btn-outline-danger btn-sm hidden" onclick="clearEduFromModal()">
-            <i class="fa-solid fa-trash-can me-1"></i> ล้างข้อมูลวุฒินี้
+            <i class="fa-solid fa-trash-can me-1"></i> ล้างวุฒินี้
           </button>
           <div class="ms-auto d-flex gap-2">
             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
-            <button type="button" class="btn btn-primary btn-sm px-3" onclick="saveEduFromModal()">บันทึกวุฒิ</button>
+            <button type="button" class="btn btn-primary btn-sm px-3" onclick="saveEduFromModal()">บันทึก</button>
           </div>
         </div>
       </div>
@@ -1615,11 +1679,11 @@
     <div class="modal-dialog modal-sm">
       <div class="modal-content">
         <div class="modal-header">
-          <h6 class="modal-title fw-bold">เปลี่ยนรหัสผ่านใหม่</h6>
+          <h6 class="modal-title fw-bold">เปลี่ยนรหัสผ่าน</h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <input type="password" id="newPasswordInput" class="form-control" placeholder="Password">
+          <input type="password" id="newPasswordInput" class="form-control" placeholder="New Password">
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-primary btn-sm w-100" onclick="changeUserPassword()">บันทึกรหัสผ่าน</button>
